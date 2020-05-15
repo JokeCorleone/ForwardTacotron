@@ -32,7 +32,7 @@ def create_gta_features(model: Tacotron,
         gta = gta.cpu().numpy()
         for j, item_id in enumerate(ids):
             mel = gta[j][:, :mel_lens[j]]
-            mel = mel.unsqueeze(0)
+            mel = torch.tensor(mel).float().unsqueeze(0)
             torch.save(mel, str(save_path/f'{item_id}.mel'))
 
             #mel = (mel + 4) / 8
