@@ -81,7 +81,7 @@ tts_num_highways = 4
 tts_dropout = 0.5
 language = 'de'
 tts_cleaner_name = 'basic_cleaners'
-tts_stop_threshold = -3.4           # Value below which audio generation ends.
+tts_stop_threshold = -10           # Value below which audio generation ends.
                                     # For example, for a range of [-4, 4], this
                                     # will terminate the sequence at the first
                                     # frame that has all values < -3.4

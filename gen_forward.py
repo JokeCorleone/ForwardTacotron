@@ -142,8 +142,8 @@ if __name__ == '__main__':
         _, m, _ = tts_model.generate(x, alpha=args.alpha)
 
         # Fix mel spectrogram scaling to be from 0 to 1
-        m = (m + 4) / 8
-        np.clip(m, 0, 1, out=m)
+        #m = (m + 4) / 8
+        #np.clip(m, 0, 1, out=m)
 
         if args.vocoder == 'griffinlim':
             v_type = args.vocoder
