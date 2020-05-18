@@ -162,6 +162,8 @@ if __name__ == '__main__':
             voc_model.generate(m, save_path, batched, hp.voc_target, hp.voc_overlap, hp.mu_law)
         elif args.vocoder == 'griffinlim':
             wav = reconstruct_waveform(m, n_iter=args.iters)
+            m_t = torch.tensor(m).unsqueeze(0)
+            torch.save(m_t, paths.forward_output/f'{i}_{tts_k}k.mel')
             save_wav(wav, save_path)
 
     print('\n\nDone.\n')
