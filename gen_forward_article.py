@@ -124,12 +124,13 @@ if __name__ == '__main__':
     print(article + '\n')
 
     doc = nlp(article.strip())
-    sentences = [sent.strip() for sent in article_lines]
+    sentences = [str(sent) for sent in doc.sents]
     inputs = []
     for i, text in enumerate(sentences):
         text = clean_text(text)
-        print(f'{i} {text}')
-        inputs.append(text)
+        if len(text) > 0:
+            print(f'{i} {text}')
+            inputs.append(text)
     inputs = [text_to_sequence(l.strip()) for l in inputs]
 
     if args.vocoder == 'wavernn':
@@ -169,7 +170,7 @@ if __name__ == '__main__':
         if input_text:
             save_path = paths.forward_output/f'{input_text[:10]}_{args.alpha}_{v_type}_{tts_k}k.wav'
         else:
-            save_path = paths.forward_output/f'{i}_{v_type}_{tts_k}ko_base.wav'
+            save_path = paths.forward_output/f'{i}_{v_type}_{tts_k}koo_base.wav'
 
         if args.vocoder == 'wavernn':
             m = torch.tensor(m).unsqueeze(0)
