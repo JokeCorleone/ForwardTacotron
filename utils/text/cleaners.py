@@ -75,10 +75,8 @@ def basic_cleaners(text):
   return text
 
 
-def english_cleaners(text):
-  text = convert_to_ascii(text)
+def german_cleaners(text):
   text = expand_numbers(text)
-  text = expand_abbreviations(text)
   text = to_phonemes(text)
   text = collapse_whitespace(text)
   return text
