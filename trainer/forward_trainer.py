@@ -71,10 +71,11 @@ class ForwardTrainer:
                 # train generator
                 model.zero_grad()
                 gen_opti.zero_grad()
-                y = label_2_float(x, 16)
+                y = label_2_float(y, 16)
                 y = y.float().unsqueeze(1)
                 print(f'y {y[0, 0, 0:10]} ')
                 print(f'y_hat {y_hat[0, 0, 0:10]} ')
+                print(f'y shape {y.shape}')
                 print(f'y hat shape {y_hat.shape}')
                 feats_fake, score_fake = model.disc(y_hat[:, :, :32000])
                 feats_real, score_real = model.disc(y[:, :, :32000])
