@@ -145,9 +145,8 @@ class ForwardTrainer:
         x, m, ids, lens, dur, y = session.val_sample
         x, m, dur, y = x.to(device), m.to(device), dur.to(device), y.to(device)
         y_hat, dur_hat = model.gen.generate(x[0].tolist())
+        y = label_2_float(y, 16)
         y = np_now(y[0])
-        print(f'y_hat shape {y_hat.shape} ndim {y_hat.ndim}')
-        print(f'y shape {y.shape}, ndim {y.ndim}')
         self.writer.add_audio(
             tag='Samples/target_wav', snd_tensor=y,
             global_step=model.get_step(), sample_rate=hp.sample_rate)
