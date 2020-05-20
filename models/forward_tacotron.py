@@ -82,19 +82,30 @@ class BatchNormConv(nn.Module):
 
 
 class ResStack(nn.Module):
-    def __init__(self, channel, num_layers=4):
+    def __init__(self, channel, num_layers=4, zero_pad=False):
         super(ResStack, self).__init__()
 
-        self.blocks = nn.ModuleList([
-            nn.Sequential(
-                nn.LeakyReLU(0.2),
-                nn.ReflectionPad1d(3**i),
-                nn.utils.weight_norm(nn.Conv1d(channel, channel, kernel_size=3, dilation=3**i)),
-                nn.LeakyReLU(0.2),
-                nn.utils.weight_norm(nn.Conv1d(channel, channel, kernel_size=1)),
-            )
-            for i in range(num_layers)
-        ])
+        if zero_pad:
+            self.blocks = nn.ModuleList([
+                nn.Sequential(
+                    nn.LeakyReLU(0.2),
+                    nn.utils.weight_norm(nn.Conv1d(channel, channel, kernel_size=3, dilation=3**i, padding=3**i)),
+                    nn.LeakyReLU(0.2),
+                    nn.utils.weight_norm(nn.Conv1d(channel, channel, kernel_size=1)),
+                )
+                for i in range(num_layers)
+            ])
+        else:
+            self.blocks = nn.ModuleList([
+                nn.Sequential(
+                    nn.LeakyReLU(0.2),
+                    nn.ReflectionPad1d(3**i),
+                    nn.utils.weight_norm(nn.Conv1d(channel, channel, kernel_size=3, dilation=3**i)),
+                    nn.LeakyReLU(0.2),
+                    nn.utils.weight_norm(nn.Conv1d(channel, channel, kernel_size=1)),
+                )
+                for i in range(num_layers)
+            ])
 
         self.shortcuts = nn.ModuleList([
             nn.utils.weight_norm(nn.Conv1d(channel, channel, kernel_size=1))
@@ -144,7 +155,7 @@ class ForwardTacotron(nn.Module):
             #nn.ReflectionPad1d(3),
             nn.utils.weight_norm(nn.Conv1d(embed_dims, 256, kernel_size=7, stride=1, padding=3)),
             nn.LeakyReLU(0.2),
-            ResStack(256, num_layers=7),
+            ResStack(256, num_layers=7, zero_pad=True),
             nn.utils.weight_norm(nn.Conv1d(256, n_mels, kernel_size=7, stride=1, padding=3)),
 
             # here are the mel outputs
@@ -189,7 +200,7 @@ class ForwardTacotron(nn.Module):
         x = self.lr(x, dur)
 
         x_out = x.detach().transpose(1, 2)
-        x_out = self.pad(x_out, mel.size(2)).transpose(1, 2)
+        x_out = self.pad(x_out, y.size(1)).transpose(1, 2)
         x = x.transpose(1, 2)
         x = self.generator(x)
         x = self.pad(x, y.size(1))
@@ -217,7 +228,7 @@ class ForwardTacotron(nn.Module):
 
     def pad(self, x, max_len):
         x = x[:, :, :max_len]
-        x = F.pad(x, [0, max_len - y.size(1), 0, 0], 'constant')
+        x = F.pad(x, [0, max_len - x.size(1), 0, 0], 'constant')
         return x
 
     def get_step(self):
@@ -266,7 +277,7 @@ class ForwardGan(nn.Module):
                                    postnet_dims=postnet_dims,
                                    highways=highways, dropout=dropout, n_mels=n_mels, durpred_conv_dims=durpred_conv_dims)
 
-        self.disc = Discriminator(n_mels)
+        self.disc = Discriminator()
 
     def load(self, path: Union[str, Path]):
         # Use device of model params as location for loaded state

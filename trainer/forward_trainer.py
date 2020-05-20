@@ -71,8 +71,11 @@ class ForwardTrainer:
                 # train generator
                 model.zero_grad()
                 gen_opti.zero_grad()
+                y = y.float().unsqueeze(-1)
+                print(f'y_hat shape {y_hat.shape}')
+                print(f'y shape {y.shape}')
                 feats_fake, score_fake = model.disc(y_hat)
-                feats_real, score_real = model.disc(m)
+                feats_real, score_real = model.disc(y)
 
                 loss_g = 0.0
 
@@ -96,7 +99,7 @@ class ForwardTrainer:
                 loss_d_sum = 0.0
                 disc_opti.zero_grad()
                 _, score_fake = model.disc(y_hat)
-                _, score_real = model.disc(m)
+                _, score_real = model.disc(y)
                 loss_d = 0.0
 
                 loss_d += 10.*torch.mean(torch.mean(torch.pow(score_real - 1.0, 2), dim=[1, 2]))
