@@ -181,7 +181,9 @@ class ForwardDataset(Dataset):
         mel = np.load(self.path/'mel'/f'{item_id}.npy')
         mel_len = mel.shape[-1]
         dur = np.load(self.path/'alg'/f'{item_id}.npy')
-        return x, mel, item_id, mel_len, dur
+        q = np.load(self.path/'quant'/f'{item_id}.npy')
+
+        return x, mel, item_id, mel_len, dur, q
 
     def __len__(self):
         return len(self.metadata)
@@ -213,12 +215,19 @@ def collate_tts(batch, r):
     mel = torch.tensor(mel)
     # scale spectrograms to -4 <--> 4
     mel = (mel * 8.) - 4.
-    # additional durations for forward
+
+
+    # additional durations and quant for forward
     if len(batch[0]) > 4:
         dur = [pad1d(x[4][:max_x_len], max_x_len) for x in batch]
         dur = np.stack(dur)
         dur = torch.tensor(dur)
-        return chars, mel, ids, mel_lens, dur
+        q_lens = [len(x[5]) for x in batch]
+        max_q_len = max(q_lens)
+        quant = [pad1d(x[5], max_q_len) for x in batch]
+        quant = np.stack(quant).astype(np.float64)
+        quant = torch.tensor(quant)
+        return chars, mel, ids, mel_lens, dur, quant
     else:
         return chars, mel, ids, mel_lens
 

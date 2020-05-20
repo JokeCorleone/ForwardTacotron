@@ -59,19 +59,19 @@ class ForwardTrainer:
         duration_avg = Averager()
         device = next(model.parameters()).device  # use same device as model parameters
         for e in range(1, epochs + 1):
-            for i, (x, m, ids, lens, dur) in enumerate(session.train_set, 1):
+            for i, (x, m, ids, lens, dur, y) in enumerate(session.train_set, 1):
                 start = time.time()
                 model.train()
                 model.gen.train()
                 model.disc.train()
-                x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
+                x, m, dur, lens, y = x.to(device), m.to(device), dur.to(device), lens.to(device), y.to(device)
 
-                m1_hat, m2_hat, dur_hat, x_out = model.gen(x, m, dur)
+                y_hat, dur_hat, x_out = model.gen(x, m, dur, y)
 
                 # train generator
                 model.zero_grad()
                 gen_opti.zero_grad()
-                feats_fake, score_fake = model.disc(m2_hat)
+                feats_fake, score_fake = model.disc(y_hat)
                 feats_real, score_real = model.disc(m)
 
                 loss_g = 0.0
@@ -81,11 +81,7 @@ class ForwardTrainer:
                     loss_g += 10. * torch.mean(torch.abs(feat_f - feat_r))
 
                 dur_loss = F.l1_loss(dur_hat, dur)
-                m_loss = F.l1_loss(m2_hat, m)
-
-                #loss_g += 0.*m_loss
                 loss_g += dur_loss
-
                 loss_g.backward()
 
                 torch.nn.utils.clip_grad_norm_(model.gen.parameters(), 1.0)
@@ -96,10 +92,10 @@ class ForwardTrainer:
                 k = step // 1000
 
                 # train discriminator
-                m2_hat = m2_hat.detach()
+                y_hat = y_hat.detach()
                 loss_d_sum = 0.0
                 disc_opti.zero_grad()
-                _, score_fake = model.disc(m2_hat)
+                _, score_fake = model.disc(y_hat)
                 _, score_real = model.disc(m)
                 loss_d = 0.0
 
@@ -112,7 +108,7 @@ class ForwardTrainer:
 
                 duration_avg.add(time.time() - start)
                 speed = 1. / duration_avg.get()
-                msg = f'| Epoch: {e}/{epochs} ({i}/{total_iters}) | Mel Loss {m_loss.item():#.4} ' \
+                msg = f'| Epoch: {e}/{epochs} ({i}/{total_iters}) '\
                       f'| Gen Loss {loss_g.item():#.4}' \
                       f'| Dur Loss: {dur_loss_avg.get():#.4} | {speed:#.2} steps/s | Step: {k}k | '
 
@@ -126,7 +122,6 @@ class ForwardTrainer:
 
                 self.writer.add_scalar('Gan/gen', loss_g, model.get_step())
                 self.writer.add_scalar('Gan/disc', loss_d, model.get_step())
-                self.writer.add_scalar('Mel_Loss/train', m_loss, model.get_step())
                 self.writer.add_scalar('Duration_Loss/train', dur_loss, model.get_step())
                 self.writer.add_scalar('Params/batch_size', session.bs, model.get_step())
                 self.writer.add_scalar('Params/learning_rate', session.lr, model.get_step())

@@ -21,7 +21,7 @@ sample_rate = 22050
 n_fft = 2048
 fft_bins = n_fft // 2 + 1
 num_mels = 80
-hop_length = 275                    # 12.5ms - in line with Tacotron 2 paper
+hop_length = 256                    # 12.5ms - in line with Tacotron 2 paper
 win_length = 1100                   # 50ms - same reason as above
 fmin = 40
 min_level_db = -100
@@ -40,7 +40,7 @@ n_val = 200                         # num validatino samples
 
 
 # Model Hparams
-voc_mode = 'RAW'                    # either 'RAW' (softmax on raw bits) or 'MOL' (sample from mixture of logistics)
+voc_mode = 'MOL'                    # either 'RAW' (softmax on raw bits) or 'MOL' (sample from mixture of logistics)
 voc_upsample_factors = (5, 5, 11)   # NB - this needs to correctly factorise hop_length
 voc_rnn_dims = 512
 voc_fc_dims = 512
@@ -120,7 +120,7 @@ forward_dropout = 0.1
 
 # Training
 
-forward_schedule = [(1e-4, 1_000,  32),    # progressive training schedule
+forward_schedule = [(1e-4, 1_000,  2),    # progressive training schedule
                     (1e-4, 300_000,  32)]   # (lr, step, batch_size)
 
 forward_max_mel_len = 1250              # if you have a couple of extremely long spectrograms you might want to use this

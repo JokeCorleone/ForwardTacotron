@@ -82,23 +82,23 @@ class BatchNormConv(nn.Module):
 
 
 class ResStack(nn.Module):
-    def __init__(self, channel, layers=4):
+    def __init__(self, channel, num_layers=4):
         super(ResStack, self).__init__()
 
         self.blocks = nn.ModuleList([
             nn.Sequential(
                 nn.LeakyReLU(0.2),
-                #nn.ReflectionPad1d(3**i),
-                nn.utils.weight_norm(nn.Conv1d(channel, channel, kernel_size=3, dilation=3**i, padding=3**i)),
+                nn.ReflectionPad1d(3**i),
+                nn.utils.weight_norm(nn.Conv1d(channel, channel, kernel_size=3, dilation=3**i)),
                 nn.LeakyReLU(0.2),
                 nn.utils.weight_norm(nn.Conv1d(channel, channel, kernel_size=1)),
             )
-            for i in range(layers)
+            for i in range(num_layers)
         ])
 
         self.shortcuts = nn.ModuleList([
             nn.utils.weight_norm(nn.Conv1d(channel, channel, kernel_size=1))
-            for i in range(layers)
+            for i in range(num_layers)
         ])
 
     def forward(self, x):
@@ -144,15 +144,42 @@ class ForwardTacotron(nn.Module):
             #nn.ReflectionPad1d(3),
             nn.utils.weight_norm(nn.Conv1d(embed_dims, 256, kernel_size=7, stride=1, padding=3)),
             nn.LeakyReLU(0.2),
-            ResStack(256, layers=7),
-            #ResStack(256, layers=4),
-            #ResStack(256, layers=4),
-            #ResStack(256, layers=4),
-            #nn.ReflectionPad1d(3),
+            ResStack(256, num_layers=7),
             nn.utils.weight_norm(nn.Conv1d(256, n_mels, kernel_size=7, stride=1, padding=3)),
+
+            # here are the mel outputs
+
+            nn.ReflectionPad1d(3),
+            nn.utils.weight_norm(nn.Conv1d(n_mels, 512, kernel_size=7, stride=1)),
+
+            nn.LeakyReLU(0.2),
+            nn.utils.weight_norm(nn.ConvTranspose1d(512, 256, kernel_size=16, stride=8, padding=4)),
+
+            ResStack(256, num_layers=4),
+
+            nn.LeakyReLU(0.2),
+            nn.utils.weight_norm(nn.ConvTranspose1d(256, 128, kernel_size=16, stride=8, padding=4)),
+
+            ResStack(128, num_layers=5),
+
+            nn.LeakyReLU(0.2),
+            nn.utils.weight_norm(nn.ConvTranspose1d(128, 64, kernel_size=4, stride=2, padding=1)),
+
+            ResStack(64, num_layers=6),
+
+            nn.LeakyReLU(0.2),
+            nn.utils.weight_norm(nn.ConvTranspose1d(64, 32, kernel_size=4, stride=2, padding=1)),
+
+            ResStack(32, num_layers=7),
+
+            nn.LeakyReLU(0.2),
+            nn.ReflectionPad1d(3),
+            nn.utils.weight_norm(nn.Conv1d(32, 1, kernel_size=7, stride=1)),
+            nn.Tanh(),
+
         )
 
-    def forward(self, x, mel, dur):
+    def forward(self, x, mel, dur, y):
         if self.training:
             self.step += 1
         x = self.embedding(x)
@@ -165,8 +192,8 @@ class ForwardTacotron(nn.Module):
         x_out = self.pad(x_out, mel.size(2)).transpose(1, 2)
         x = x.transpose(1, 2)
         x = self.generator(x)
-        x = self.pad(x, mel.size(2))
-        return x, x, dur_hat, x_out
+        x = self.pad(x, y.size(1))
+        return x, dur_hat, x_out
 
     def generate(self, x, alpha=1.0):
         self.eval()
@@ -190,7 +217,7 @@ class ForwardTacotron(nn.Module):
 
     def pad(self, x, max_len):
         x = x[:, :, :max_len]
-        x = F.pad(x, [0, max_len - x.size(2), 0, 0], 'constant', value=-4.)
+        x = F.pad(x, [0, max_len - y.size(1), 0, 0], 'constant')
         return x
 
     def get_step(self):
