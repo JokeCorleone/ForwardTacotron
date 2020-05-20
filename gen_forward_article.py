@@ -124,7 +124,8 @@ if __name__ == '__main__':
     print(article + '\n')
 
     doc = nlp(article.strip())
-    sentences = [str(sent) for sent in doc.sents]
+    #sentences = [str(sent) for sent in doc.sents]
+    sentences = article_lines
     inputs = []
     for i, text in enumerate(sentences):
         text = clean_text(text)
@@ -174,12 +175,13 @@ if __name__ == '__main__':
 
         if args.vocoder == 'wavernn':
             m = torch.tensor(m).unsqueeze(0)
+            m = torch.cat([m, torch.zeros(1, 80, 40)], dim=-1) # extra pause
             #torch.cat([m, torch.zeros(1, m.size(1), 100)], dim=-1)
             wav =voc_model.generate(m, save_path, batched, hp.voc_target, hp.voc_overlap, hp.mu_law)
             wavs.append(wav)
-            wavs.append(np.zeros(8000))  # extra pause
+#            wavs.append(np.zeros(8000))  # extra pause
             wavs_concat = np.concatenate(wavs)
-            save_wav(wavs_concat, '/tmp/article2.wav')
+            save_wav(wavs_concat, '/tmp/article.wav')
 
         elif args.vocoder == 'griffinlim':
             wav = reconstruct_waveform(m, n_iter=args.iters)
