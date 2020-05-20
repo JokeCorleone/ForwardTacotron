@@ -203,7 +203,7 @@ class ForwardTacotron(nn.Module):
         x_out = self.pad(x_out, y.size(1)).transpose(1, 2)
         x = x.transpose(1, 2)
         x = self.generator(x)
-        x = self.pad(x, y.size(1))
+        x = self.pad(x, y.size(-1))
         return x, dur_hat, x_out
 
     def generate(self, x, alpha=1.0):
@@ -228,7 +228,7 @@ class ForwardTacotron(nn.Module):
 
     def pad(self, x, max_len):
         x = x[:, :, :max_len]
-        x = F.pad(x, [0, max_len - x.size(1), 0, 0], 'constant')
+        x = F.pad(x, [0, max_len - x.size(2), 0, 0], 'constant')
         return x
 
     def get_step(self):

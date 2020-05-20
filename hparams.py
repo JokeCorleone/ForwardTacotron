@@ -18,11 +18,11 @@ ignore_tts = False
 
 # Settings for all models
 sample_rate = 22050
-n_fft = 2048
+n_fft = 1024
 fft_bins = n_fft // 2 + 1
 num_mels = 80
 hop_length = 256                    # 12.5ms - in line with Tacotron 2 paper
-win_length = 1100                   # 50ms - same reason as above
+win_length = 1024                   # 50ms - same reason as above
 fmin = 40
 min_level_db = -100
 ref_level_db = 20
@@ -120,8 +120,8 @@ forward_dropout = 0.1
 
 # Training
 
-forward_schedule = [(1e-4, 1_000,  2),    # progressive training schedule
-                    (1e-4, 300_000,  32)]   # (lr, step, batch_size)
+forward_schedule = [(1e-4, 1_000,  8),    # progressive training schedule
+                    (1e-4, 300_000,  8)]   # (lr, step, batch_size)
 
 forward_max_mel_len = 1250              # if you have a couple of extremely long spectrograms you might want to use this
 forward_clip_grad_norm = 1.0            # clips the gradient norm to prevent explosion - set to None if not needed

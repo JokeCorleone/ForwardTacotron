@@ -15,7 +15,7 @@ from utils.dataset import get_tts_datasets
 from utils.decorators import ignore_exception
 from utils.display import stream, simple_table, plot_mel
 from utils.distribution import MaskedBCE
-from utils.dsp import reconstruct_waveform, rescale_mel, np_now
+from utils.dsp import reconstruct_waveform, rescale_mel, np_now, label_2_float
 from utils.paths import Paths
 
 
@@ -71,16 +71,24 @@ class ForwardTrainer:
                 # train generator
                 model.zero_grad()
                 gen_opti.zero_grad()
-                y = y.float().unsqueeze(-1)
-                print(f'y_hat shape {y_hat.shape}')
-                print(f'y shape {y.shape}')
-                feats_fake, score_fake = model.disc(y_hat)
-                feats_real, score_real = model.disc(y)
+                y = label_2_float(x, 16)
+                y = y.float().unsqueeze(1)
+                print(f'y {y[0, 0, 0:10]} ')
+                print(f'y_hat {y_hat[0, 0, 0:10]} ')
+                print(f'y hat shape {y_hat.shape}')
+                feats_fake, score_fake = model.disc(y_hat[:, :, :32000])
+                feats_real, score_real = model.disc(y[:, :, :32000])
 
                 loss_g = 0.0
 
                 loss_g += 10.*torch.mean(torch.mean(torch.pow(score_fake - 1.0, 2), dim=[1, 2]))
+
+
+                print(f'g {loss_g.item()}')
+
                 for feat_f, feat_r in zip(feats_fake, feats_real):
+                    fm = 10. * torch.mean(torch.abs(feat_f - feat_r))
+                    print(f'fm {fm.item()}')
                     loss_g += 10. * torch.mean(torch.abs(feat_f - feat_r))
 
                 dur_loss = F.l1_loss(dur_hat, dur)
@@ -98,8 +106,8 @@ class ForwardTrainer:
                 y_hat = y_hat.detach()
                 loss_d_sum = 0.0
                 disc_opti.zero_grad()
-                _, score_fake = model.disc(y_hat)
-                _, score_real = model.disc(y)
+                _, score_fake = model.disc(y_hat[:, :, :32000])
+                _, score_real = model.disc(y[:, :, :32000])
                 loss_d = 0.0
 
                 loss_d += 10.*torch.mean(torch.mean(torch.pow(score_real - 1.0, 2), dim=[1, 2]))
