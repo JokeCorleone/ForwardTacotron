@@ -81,8 +81,6 @@ class ForwardTrainer:
                 loss_g += 10.*torch.mean(torch.mean(torch.pow(score_fake - 1.0, 2), dim=[1, 2]))
 
 
-                print(f'g {loss_g.item()}')
-
                 for feat_f, feat_r in zip(feats_fake, feats_real):
                     loss_g += 10. * torch.mean(torch.abs(feat_f - feat_r))
 
