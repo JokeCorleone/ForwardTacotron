@@ -132,76 +132,26 @@ class ForwardTrainer:
 
                 stream(msg)
 
-            m_val_loss, dur_val_loss = self.evaluate(model, session.val_set)
-            self.writer.add_scalar('Mel_Loss/val', m_val_loss, model.get_step())
-            self.writer.add_scalar('Duration_Loss/val', dur_val_loss, model.get_step())
             save_checkpoint('forward', self.paths, model, gen_opti, disc_opti, is_silent=True)
 
             m_loss_avg.reset()
             duration_avg.reset()
             print(' ')
 
-    def evaluate(self, model: ForwardTacotron, val_set: Dataset) -> Tuple[float, float]:
-        model.eval()
-        m_val_loss = 0
-        dur_val_loss = 0
-        device = next(model.parameters()).device
-        for i, (x, m, ids, lens, dur) in enumerate(val_set, 1):
-            x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
-            with torch.no_grad():
-                m1_hat, m2_hat, dur_hat, x_out = model.gen(x, m, dur)
-                m1_loss = self.l1_loss(m1_hat, m, lens)
-                m2_loss = self.l1_loss(m2_hat, m, lens)
-                dur_loss = F.l1_loss(dur_hat, dur)
-                m_val_loss += m1_loss.item() + m2_loss.item()
-                dur_val_loss += dur_loss.item()
-        return m_val_loss / len(val_set), dur_val_loss / len(val_set)
-
     @ignore_exception
     def generate_plots(self, model: ForwardTacotron, session: TTSSession) -> None:
         model.eval()
         device = next(model.parameters()).device
-        x, m, ids, lens, dur = session.val_sample
-        x, m, dur = x.to(device), m.to(device), dur.to(device)
-
-        m1_hat, m2_hat, dur_hat, x_out = model.gen(x, m, dur)
-        m1_hat = np_now(m1_hat)[0, :600, :]
-        m2_hat = np_now(m2_hat)[0, :600, :]
-        m = np_now(m)[0, :600, :]
-
-        m1_hat_fig = plot_mel(m1_hat)
-        m2_hat_fig = plot_mel(m2_hat)
-        m_fig = plot_mel(m)
-
-        self.writer.add_figure('Ground_Truth_Aligned/target', m_fig, model.get_step())
-        self.writer.add_figure('Ground_Truth_Aligned/linear', m1_hat_fig, model.get_step())
-        self.writer.add_figure('Ground_Truth_Aligned/postnet', m2_hat_fig, model.get_step())
-
-        m1_hat, m2_hat, m = rescale_mel(m1_hat), rescale_mel(m2_hat), rescale_mel(m)
-        m2_hat_wav = reconstruct_waveform(m2_hat)
-        target_wav = reconstruct_waveform(m)
-
+        x, m, ids, lens, dur, y = session.val_sample
+        x, m, dur, y = x.to(device), m.to(device), dur.to(device), y.to(device)
+        y_hat, dur_hat = model.gen.generate(x[0].tolist())
+        y = np_now(y[0])
+        print(f'y_hat shape {y_hat.shape} ndim {y_hat.ndim}')
+        print(f'y shape {y.shape}, ndim {y.ndim}')
         self.writer.add_audio(
-            tag='Ground_Truth_Aligned/target_wav', snd_tensor=target_wav,
+            tag='Samples/target_wav', snd_tensor=y,
             global_step=model.get_step(), sample_rate=hp.sample_rate)
         self.writer.add_audio(
-            tag='Ground_Truth_Aligned/postnet_wav', snd_tensor=m2_hat_wav,
+            tag='Samples/generated_wav', snd_tensor=y_hat,
             global_step=model.get_step(), sample_rate=hp.sample_rate)
 
-        m1_hat, m2_hat, dur_hat = model.gen.generate(x[0].tolist())
-        m1_hat, m2_hat = rescale_mel(m1_hat), rescale_mel(m2_hat)
-        m1_hat_fig = plot_mel(m1_hat)
-        m2_hat_fig = plot_mel(m2_hat)
-
-        self.writer.add_figure('Generated/target', m_fig, model.get_step())
-        self.writer.add_figure('Generated/linear', m1_hat_fig, model.get_step())
-        self.writer.add_figure('Generated/postnet', m2_hat_fig, model.get_step())
-
-        m2_hat_wav = reconstruct_waveform(m2_hat)
-
-        self.writer.add_audio(
-            tag='Generated/target_wav', snd_tensor=target_wav,
-            global_step=model.get_step(), sample_rate=hp.sample_rate)
-        self.writer.add_audio(
-            tag='Generated/postnet_wav', snd_tensor=m2_hat_wav,
-            global_step=model.get_step(), sample_rate=hp.sample_rate)

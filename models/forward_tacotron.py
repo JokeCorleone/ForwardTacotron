@@ -221,10 +221,9 @@ class ForwardTacotron(nn.Module):
 
         x, dur = x.squeeze(),dur.squeeze()
         x = x.cpu().data.numpy()
-        #x_post = x.cpu().data.numpy()
         dur = dur.cpu().data.numpy()
 
-        return x, x, dur
+        return x, dur
 
     def pad(self, x, max_len):
         x = x[:, :, :max_len]
