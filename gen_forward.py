@@ -153,7 +153,7 @@ if __name__ == '__main__':
             v_type = 'wavernn_unbatched'
 
         if input_text:
-            save_path = paths.forward_output/f'{input_text[:10]}_{args.alpha}_{v_type}_{tts_k}k.wav'
+            save_path = paths.forward_output/f'{input_text[:10]}_{args.alpha}_{v_type}_{tts_k}k.wavvoc'
         else:
             save_path = paths.forward_output/f'{i}_{v_type}_{tts_k}ko.wav'
 
