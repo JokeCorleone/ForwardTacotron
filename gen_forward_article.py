@@ -124,8 +124,8 @@ if __name__ == '__main__':
     print(article + '\n')
 
     doc = nlp(article.strip())
-    #sentences = [str(sent) for sent in doc.sents]
-    sentences = article_lines
+    sentences = [str(sent) for sent in doc.sents]
+    #sentences = article_lines
     inputs = []
     for i, text in enumerate(sentences):
         text = clean_text(text)
