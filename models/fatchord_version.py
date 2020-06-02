@@ -207,6 +207,7 @@ class WaveRNN(nn.Module):
     def pad_tensor(self, x, pad, side='both'):
         # NB - this is just a quick method i need right now
         # i.e., it won't generalise to other shapes/dims
+        print(x.size())
         b, t, c = x.size()
         total = t + 2 * pad if side == 'both' else t + pad
         padded = torch.zeros(b, total, c, device=x.device)
@@ -325,8 +326,8 @@ class WaveRNN(nn.Module):
         device = next(self.parameters()).device
 
         with torch.no_grad():
-            mels = torch.FloatTensor(mels, device=device).unsqueeze(0)
-            mels = self.pad_tensor(mels.transpose(1, 2), pad=hp.pad, side='both')
+            mels = mels.to(device).unsqueeze(0)
+            mels = self.pad_tensor(mels.transpose(1, 2), pad=hp.voc_pad, side='both')
 
             mels, aux = self.upsample(mels.transpose(1, 2))
 
@@ -401,7 +402,7 @@ class WaveRNN(nn.Module):
             x = torch.zeros(b_size, 1, device=device)
             h1 = torch.zeros(b_size, self.rnn_dims, device=device)
 
-            mels = torch.FloatTensor(mels, device=device)
+            mels = mels.to(device)
             mels, aux = self.upsample(mels)
 
             aux_idx = [self.aux_dims * i for i in range(3)]

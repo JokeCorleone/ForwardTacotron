@@ -158,9 +158,8 @@ class VocTrainer:
                 x = decode_mu_law(x, 2 ** bits, from_labels=True)
             else:
                 x = label_2_float(x, bits)
-            gen_wav = model.generate(
-                mels=m, batched=hp.voc_gen_batched,
-                target=hp.voc_target, overlap=hp.voc_overlap)
+            #m = torch.tensor(m).to(device).unsqueeze(0)
+            gen_wav = model.batch_generate(mels=m)[0]
 
             gen_wavs.append(gen_wav)
             y_mel = raw_melspec(x.squeeze())

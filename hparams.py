@@ -54,7 +54,7 @@ voc_schedule = [(1e-4,  300_000,  2),        # progressive training schedule
                 (2e-5,  2_000_000,  32)]      # (lr, step, batch_size)
 
 voc_checkpoint_every = 25_000
-voc_gen_samples_every = 5        # how often to generate samples for cherry-picking models
+voc_gen_samples_every = 5000        # how often to generate samples for cherry-picking models
 voc_gen_num_samples = 3             # number of samples to generate for cherry-picking models
 voc_keep_top_k = 3                  # how many top performing models to keep
 voc_pad = 2                         # this will pad the input so that the resnet can 'see' wider than input length
