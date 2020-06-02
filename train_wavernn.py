@@ -47,10 +47,7 @@ if __name__ == '__main__':
                         feat_dims=hp.num_mels,
                         compute_dims=hp.voc_compute_dims,
                         res_out_dims=hp.voc_res_out_dims,
-                        res_blocks=hp.voc_res_blocks,
-                        hop_length=hp.hop_length,
-                        sample_rate=hp.sample_rate,
-                        mode=hp.voc_mode).to(device)
+                        res_blocks=hp.voc_res_blocks).to(device)
 
     # Check to make sure the hop length is correctly factorised
     assert np.cumprod(hp.voc_upsample_factors)[-1] == hp.hop_length

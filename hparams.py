@@ -7,8 +7,8 @@ data_path = 'data/'
 
 # model ids are separate - that way you can use a new tts with an old wavernn and vice versa
 # NB: expect undefined behaviour if models were trained on different DSP settings
-voc_model_id = 'asvoice_raw'
-tts_model_id = 'asvoice_tts'
+voc_model_id = 'asvoice_fast_raw'
+tts_model_id = 'asvoice_fast_tts'
 
 # set this to True if you are only interested in WaveRNN
 ignore_tts = False
@@ -42,11 +42,11 @@ n_val = 200                         # num validatino samples
 # Model Hparams
 voc_mode = 'RAW'                    # either 'RAW' (softmax on raw bits) or 'MOL' (sample from mixture of logistics)
 voc_upsample_factors = (5, 5, 11)   # NB - this needs to correctly factorise hop_length
-voc_rnn_dims = 512
-voc_fc_dims = 512
-voc_compute_dims = 128
+voc_rnn_dims = 256
+voc_fc_dims = 128
+voc_compute_dims = 64
 voc_res_out_dims = 128
-voc_res_blocks = 10
+voc_res_blocks = 5
 
 # Training
 
