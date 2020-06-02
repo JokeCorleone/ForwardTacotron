@@ -159,15 +159,15 @@ class VocTrainer:
             else:
                 x = label_2_float(x, bits)
             #m = torch.tensor(m).to(device).unsqueeze(0)
-            gen_wav = model.batch_generate(mels=m)[0]
-
+            gen_wav = model.batch_generate(mels=m)
+            print(gen_wav)
             gen_wavs.append(gen_wav)
             y_mel = raw_melspec(x.squeeze())
             y_mel = torch.tensor(y_mel).to(device)
             y_hat_mel = raw_melspec(gen_wav)
             y_hat_mel = torch.tensor(y_hat_mel).to(device)
-            loss = F.l1_loss(y_hat_mel, y_mel)
-            mel_losses.append(loss.item())
+            loss = 1.
+            mel_losses.append(loss)
 
             self.writer.add_audio(
                 tag=f'Validation_Samples/target_{i}', snd_tensor=x,
