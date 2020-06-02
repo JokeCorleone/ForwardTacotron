@@ -95,6 +95,7 @@ class WaveRNN(nn.Module):
                  feat_dims, compute_dims, res_out_dims, res_blocks):
         super().__init__()
         self.n_classes = 2 ** bits
+        self.mode = 'RAW'
         self.rnn_dims = rnn_dims
         self.aux_dims = res_out_dims // 2
         self.upsample = UpsampleNetwork(feat_dims, upsample_factors, compute_dims,
@@ -106,11 +107,14 @@ class WaveRNN(nn.Module):
         self.fc1 = nn.Linear(rnn_dims + self.aux_dims, fc_dims)
         # self.fc2 = nn.Linear(fc_dims, fc_dims)
         self.fc3 = nn.Linear(fc_dims, self.n_classes)
+        self.register_buffer('step', torch.zeros(1, dtype=torch.long))
 
     def forward(self, x, mels):
-        bsize = x.size(0)
-        h1 = torch.zeros(1, bsize, self.rnn_dims).cuda()
 
+        if self.training:
+            self.step += 1
+        bsize = x.size(0)
+        h1 = torch.zeros(1, bsize, self.rnn_dims, device=x.device)
         mels, aux = self.upsample(mels)
 
         aux_idx = [self.aux_dims * i for i in range(3)]
@@ -128,15 +132,7 @@ class WaveRNN(nn.Module):
         # x = F.relu(self.fc2(x))
 
         x = self.fc3(x)
-
-        if hp.input_type == 'raw':
-            return x
-        elif hp.input_type == 'mixture':
-            return x
-        elif hp.input_type == 'bits' or hp.input_type == 'mulaw':
-            return F.log_softmax(x, dim=-1)
-        else:
-            raise ValueError("input_type: {hp.input_type} not supported")
+        return x
 
     def preview_upsampling(self, mels):
         mels, aux = self.upsample(mels)
@@ -213,7 +209,7 @@ class WaveRNN(nn.Module):
         # i.e., it won't generalise to other shapes/dims
         b, t, c = x.size()
         total = t + 2 * pad if side == 'both' else t + pad
-        padded = torch.zeros(b, total, c).cuda()
+        padded = torch.zeros(b, total, c, device=x.device)
         if side == 'before' or side == 'both':
             padded[:, pad:pad + t, :] = x
         elif side == 'after':
@@ -253,7 +249,7 @@ class WaveRNN(nn.Module):
             padding = target + 2 * overlap - remaining
             x = self.pad_tensor(x, padding, side='after')
 
-        folded = torch.zeros(num_folds, target + 2 * overlap, features).cuda()
+        folded = torch.zeros(num_folds, target + 2 * overlap, features, device=xdevice)
 
         # Get the values for the folded tensor
         for i in range(num_folds):
@@ -325,9 +321,11 @@ class WaveRNN(nn.Module):
         output = []
 
         rnn1 = self.get_gru_cell(self.rnn1)
+        start = time.time()
+        device = next(self.parameters()).device
 
         with torch.no_grad():
-            mels = torch.FloatTensor(mels).cuda().unsqueeze(0)
+            mels = torch.FloatTensor(mels, device=device).unsqueeze(0)
             mels = self.pad_tensor(mels.transpose(1, 2), pad=hp.pad, side='both')
 
             mels, aux = self.upsample(mels.transpose(1, 2))
@@ -338,9 +336,9 @@ class WaveRNN(nn.Module):
 
             b_size, seq_len, _ = mels.size()
 
-            h1 = torch.zeros(b_size, self.rnn_dims).cuda()
+            h1 = torch.zeros(b_size, self.rnn_dims, device=device)
 
-            x = torch.zeros(b_size, 1).cuda()
+            x = torch.zeros(b_size, 1, device=device)
 
             d = self.aux_dims
             aux_split = [aux[:, :, d * i:d * (i + 1)] for i in range(2)]
@@ -368,6 +366,8 @@ class WaveRNN(nn.Module):
 
                 output.append(sample)
                 x = sample.unsqueeze(-1)
+                if i % 100 == 0:
+                    self.gen_display(i, seq_len, b_size, start)
 
         output = torch.stack(output).transpose(0, 1)
         output = output.cpu().numpy()
@@ -380,6 +380,12 @@ class WaveRNN(nn.Module):
         self.train()
         return output
 
+    def gen_display(self, i, seq_len, b_size, start):
+        gen_rate = (i + 1) / (time.time() - start) * b_size / 1000
+        pbar = progbar(i, seq_len)
+        msg = f'| {pbar} {i*b_size}/{seq_len*b_size} | Batch Size: {b_size} | Gen Rate: {gen_rate:.1f}kHz | '
+        stream(msg)
+
     def batch_generate(self, mels):
         """mel should be of shape [batch_size x 80 x mel_length]
         """
@@ -389,12 +395,13 @@ class WaveRNN(nn.Module):
         # rnn2 = self.get_gru_cell(self.rnn2)
         b_size = mels.shape[0]
         assert len(mels.shape) == 3, "mels should have shape [batch_size x 80 x mel_length]"
+        device = next(self.parameters()).device
 
         with torch.no_grad():
-            x = torch.zeros(b_size, 1).cuda()
-            h1 = torch.zeros(b_size, self.rnn_dims).cuda()
+            x = torch.zeros(b_size, 1, device=device)
+            h1 = torch.zeros(b_size, self.rnn_dims, device=device)
 
-            mels = torch.FloatTensor(mels).cuda()
+            mels = torch.FloatTensor(mels, device=device)
             mels, aux = self.upsample(mels)
 
             aux_idx = [self.aux_dims * i for i in range(3)]
@@ -441,39 +448,17 @@ class WaveRNN(nn.Module):
         gru_cell.bias_ih.data = gru.bias_ih_l0.data
         return gru_cell
 
+    def get_step(self):
+        return self.step.data.item()
 
-def build_model():
-    """build model with hparams settings
-    """
-    if hp.input_type == 'raw':
-        print('building model with Beta distribution output')
-    elif hp.input_type == 'mixture':
-        print("building model with mixture of logistic output")
-    elif hp.input_type == 'bits':
-        print("building model with quantized bit audio")
-    elif hp.input_type == 'mulaw':
-        print("building model with quantized mulaw encoding")
-    else:
-        raise ValueError('input_type provided not supported')
-    model = WaveRNN(hp.rnn_dims, hp.fc_dims, hp.bits,
-                  hp.pad, hp.upsample_factors, hp.num_mels,
-                  hp.compute_dims, hp.res_out_dims, hp.res_blocks)
+    def load(self, path: Union[str, Path]):
+        # Use device of model params as location for loaded state
+        device = next(self.parameters()).device
+        self.load_state_dict(torch.load(path, map_location=device), strict=False)
 
-    return model
+    def save(self, path: Union[str, Path]):
+        # No optimizer argument because saving a model should not include data
+        # only relevant in the training process - it should only be properties
+        # of the model itself. Let caller take care of saving optimzier state.
+        torch.save(self.state_dict(), path)
 
-
-def no_test_build_model():
-    model = WaveRNN(hp.rnn_dims, hp.fc_dims, hp.bits,
-                  hp.pad, hp.upsample_factors, hp.num_mels,
-                  hp.compute_dims, hp.res_out_dims, hp.res_blocks).cuda()
-    print(vars(model))
-
-
-def test_batch_generate():
-    model = WaveRNN(hp.rnn_dims, hp.fc_dims, hp.bits,
-                  hp.pad, hp.upsample_factors, hp.num_mels,
-                  hp.compute_dims, hp.res_out_dims, hp.res_blocks).cuda()
-    print(vars(model))
-    batch_mel = torch.rand(3, 80, 100)
-    output = model.batch_generate(batch_mel)
-    print(output.shape)

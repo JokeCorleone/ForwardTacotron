@@ -159,9 +159,8 @@ class VocTrainer:
             else:
                 x = label_2_float(x, bits)
             gen_wav = model.generate(
-                mels=m, save_path=None, batched=hp.voc_gen_batched,
-                target=hp.voc_target, overlap=hp.voc_overlap,
-                mu_law=hp.mu_law, silent=True)
+                mels=m, batched=hp.voc_gen_batched,
+                target=hp.voc_target, overlap=hp.voc_overlap)
 
             gen_wavs.append(gen_wav)
             y_mel = raw_melspec(x.squeeze())
