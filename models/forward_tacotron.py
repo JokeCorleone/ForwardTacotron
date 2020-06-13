@@ -141,6 +141,9 @@ class ForwardTacotron(nn.Module):
 
         sum_durs = torch.sum(dur_hat, dim=1)
 
+        for i in range(bs):
+            dur_hat[i] = dur_hat[i] / sum_durs[i] * mel_lens[i]
+
         x_p = self.prenet(x)
         device = next(self.parameters()).device
         mel_len = mel.shape[-1]
