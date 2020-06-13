@@ -133,20 +133,26 @@ class ForwardTacotron(nn.Module):
         dur_hat = self.dur_pred(x)
         dur_hat = dur_hat.squeeze()
 
-        dur_hat = torch.softmax(dur_hat, dim=1)
+        ends = torch.cumsum(dur_hat, dim=1)
+        mids = ends - dur_hat / 2.
 
         x = x.transpose(1, 2)
         bs = dur_hat.shape[0]
 
-
-
-        for i in range(bs):
-            dur_hat[i] = dur_hat[i] * mel_lens[i]
-
         sum_durs = torch.sum(dur_hat, dim=1)
 
-        x = self.prenet(x)
-        x = self.lr(x, dur_hat)
+        x_p = self.prenet(x)
+        x = torch.zeros((bs, mel.shape[-1], x_p.shape[-1]))
+        for b in range(bs):
+            for t in range(mel_lens[b]):
+                wt_list = []
+                for m in range(mids[b].shape[0]):
+                    wt = torch.exp(-(t - mids[b, m])**2)
+                    wt_list.append(wt)
+                norm = sum(wt_list) + 1e-10
+                for m in range(mids[b].shape[0]):
+                    x[b, t] += wt_list[m] / norm * x_p[b, m]
+
         x, _ = self.lstm(x)
         x = F.dropout(x,
                       p=self.dropout,
@@ -160,7 +166,8 @@ class ForwardTacotron(nn.Module):
 
         x_post = self.pad(x_post, mel.size(2))
         x = self.pad(x, mel.size(2))
-        return x, x_post, dur_hat
+
+        return x, x_post, sum_durs
 
     def generate(self, x, alpha=1.0):
         self.eval()

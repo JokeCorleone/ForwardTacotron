@@ -51,6 +51,7 @@ class ForwardTrainer:
 
         m_loss_avg = Averager()
         duration_avg = Averager()
+        dur_loss_avg = Averager()
         device = next(model.parameters()).device  # use same device as model parameters
         for e in range(1, epochs + 1):
             for i, (x, m, ids, lens) in enumerate(session.train_set, 1):
@@ -63,22 +64,22 @@ class ForwardTrainer:
 
                 m1_loss = self.l1_loss(m1_hat, m, lens)
                 m2_loss = self.l1_loss(m2_hat, m, lens)
-                #dur_loss = F.l1_loss(dur_hat, dur)
+                dur_loss = F.l1_loss(dur_hat, lens)
 
-                loss = m1_loss + m2_loss
+                loss = m1_loss + m2_loss + dur_loss
                 optimizer.zero_grad()
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), hp.tts_clip_grad_norm)
                 optimizer.step()
                 m_loss_avg.add(m1_loss.item() + m2_loss.item())
-                #dur_loss_avg.add(dur_loss.item())
+                dur_loss_avg.add(dur_loss.item())
                 step = model.get_step()
                 k = step // 1000
 
                 duration_avg.add(time.time() - start)
                 speed = 1. / duration_avg.get()
                 msg = f'| Epoch: {e}/{epochs} ({i}/{total_iters}) | Mel Loss: {m_loss_avg.get():#.4} ' \
-                      f'| {speed:#.2} steps/s | Step: {k}k | '
+                      f'| Dur Loss: {dur_loss:#.1} | {speed:#.2} steps/s | Step: {k}k | '
 
                 if step % hp.forward_checkpoint_every == 0:
                     ckpt_name = f'forward_step{k}K'
@@ -89,7 +90,7 @@ class ForwardTrainer:
                     self.generate_plots(model, session)
 
                 self.writer.add_scalar('Mel_Loss/train', m1_loss + m2_loss, model.get_step())
-                #self.writer.add_scalar('Duration_Loss/train', dur_loss, model.get_step())
+                self.writer.add_scalar('Duration_Loss/train', dur_loss, model.get_step())
                 self.writer.add_scalar('Params/batch_size', session.bs, model.get_step())
                 self.writer.add_scalar('Params/learning_rate', session.lr, model.get_step())
 
@@ -100,6 +101,7 @@ class ForwardTrainer:
             save_checkpoint('forward', self.paths, model, optimizer, is_silent=True)
 
             m_loss_avg.reset()
+            dur_loss_avg.reset()
             duration_avg.reset()
             print(' ')
 
