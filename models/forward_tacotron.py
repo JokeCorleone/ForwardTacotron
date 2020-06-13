@@ -153,8 +153,8 @@ class ForwardTacotron(nn.Module):
         x = torch.zeros((bs, mel_len, x_p.shape[-1])).to(device)
         for t in range(mel_len):
             t_tens = torch.full((bs, 1), fill_value=t).to(device)
-            wt = torch.exp(-1.*(t_tens - mids) ** 2)
-            norm = torch.sum(wt, dim=1) + 1e-10
+            wt = torch.exp(-0.1*(t_tens - mids) ** 2)
+            norm = torch.sum(wt, dim=1) + 1e-9
             norm = norm.unsqueeze(-1)
             wt = wt.unsqueeze(-1)
             v = wt * x_p
