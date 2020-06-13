@@ -49,11 +49,11 @@ def build_mel_basis():
 '''
 
 def normalize(S):
-    return np.clip((S - hp.min_level_db) / -hp.min_level_db, 0, 1)
+    return S #np.clip((S - hp.min_level_db) / -hp.min_level_db, 0, 1)
 
 
 def denormalize(S):
-    return (np.clip(S, 0, 1) * -hp.min_level_db) + hp.min_level_db
+    return S#(np.clip(S, 0, 1) * -hp.min_level_db) + hp.min_level_db
 
 
 def amp_to_db(x):
@@ -111,8 +111,8 @@ def decode_mu_law(y, mu, from_labels=True):
 
 
 def rescale_mel(m):
-    m = (m + 4) / 8
-    np.clip(m, 0, 1, out=m)
+    #m = (m + 4) / 8
+    #np.clip(m, 0, 1, out=m)
     return m
 
 
