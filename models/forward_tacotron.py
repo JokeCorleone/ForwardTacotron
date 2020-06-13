@@ -139,7 +139,7 @@ class ForwardTacotron(nn.Module):
         x = x.transpose(1, 2)
         bs = dur_hat.shape[0]
 
-        sum_durs = torch.sum(dur_hat)
+        sum_durs = torch.sum(dur_hat, dim=1)
 
         x_p = self.prenet(x)
         device = next(self.parameters()).device
