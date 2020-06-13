@@ -150,7 +150,24 @@ class ForwardTacotron(nn.Module):
         x_p = self.prenet(x)
         device = next(self.parameters()).device
         mel_len = mel.shape[-1]
+        seq_len = mids.shape[1]
+
+        t_range = torch.arange(0, mel_len).long().to(device)
+        t_range = t_range.unsqueeze(0)
+        t_range = t_range.expand(bs, mel_len)
+        t_range = t_range.unsqueeze(-1)
+        t_range = t_range.expand(bs, mel_len, seq_len)
+
+        print(f't_range shape {t_range.shape}')
+        mids = mids.unsqueeze(1)
+        diff = t_range - mids
+        print(f'diff shape {diff.shape}')
+        logits = -diff ** 2 / 10.
+        weights = torch.softmax(logits, dim=2)
+        x = torch.einsum('bij,bjk->bik', weights, x_p)
+        """
         x = torch.zeros((bs, mel_len, x_p.shape[-1])).to(device)
+
         for t in range(mel_len):
             t_tens = torch.full((bs, 1), fill_value=t).to(device)
             wt = torch.exp(-0.1*(t_tens - mids) ** 2)
@@ -160,14 +177,13 @@ class ForwardTacotron(nn.Module):
             v = wt * x_p
             v = torch.sum(v, dim=1) / norm
             x[:, t] = v
-
+        """
         x, _ = self.lstm(x)
         x = F.dropout(x,
                       p=self.dropout,
                       training=self.training)
         x = self.lin(x)
         x = x.transpose(1, 2)
-
         x_post = self.postnet(x)
         x_post = self.post_proj(x_post)
         x_post = x_post.transpose(1, 2)
