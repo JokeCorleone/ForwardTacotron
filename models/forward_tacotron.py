@@ -158,10 +158,8 @@ class ForwardTacotron(nn.Module):
         t_range = t_range.unsqueeze(-1)
         t_range = t_range.expand(bs, mel_len, seq_len)
 
-        print(f't_range shape {t_range.shape}')
         mids = mids.unsqueeze(1)
         diff = t_range - mids
-        print(f'diff shape {diff.shape}')
         logits = -diff ** 2 / 10.
         weights = torch.softmax(logits, dim=2)
         x = torch.einsum('bij,bjk->bik', weights, x_p)
