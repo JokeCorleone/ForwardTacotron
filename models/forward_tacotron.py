@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 from typing import Union
 
@@ -135,6 +136,9 @@ class ForwardTacotron(nn.Module):
         sum_durs = torch.sum(dur_hat, dim=1)
         bs = dur_hat.shape[0]
 
+        if random.random() < 0.01:
+            print(f'durs: {dur_hat[0]}')
+
         for i in range(bs):
             dur_hat[i] = dur_hat[i] / sum_durs[i].detach() * mel_lens[i]
 
@@ -143,10 +147,6 @@ class ForwardTacotron(nn.Module):
 
         x = x.transpose(1, 2)
 
-
-        #print()
-        #print(torch.sum(dur_hat, dim=1))
-        #print(mel_lens)
         x_p = self.prenet(x)
         device = next(self.parameters()).device
         mel_len = mel.shape[-1]
@@ -160,7 +160,6 @@ class ForwardTacotron(nn.Module):
 
         mids = mids.unsqueeze(1)
         diff = t_range - mids
-
         logits = -diff ** 2 / 10. - 1e-9
         weights = torch.softmax(logits, dim=2)
         x = torch.einsum('bij,bjk->bik', weights, x_p)
