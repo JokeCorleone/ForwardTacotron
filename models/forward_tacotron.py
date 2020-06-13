@@ -142,7 +142,8 @@ class ForwardTacotron(nn.Module):
         sum_durs = torch.sum(dur_hat, dim=1)
 
         x_p = self.prenet(x)
-        x = torch.zeros((bs, mel.shape[-1], x_p.shape[-1]))
+        device = next(self.parameters()).device
+        x = torch.zeros((bs, mel.shape[-1], x_p.shape[-1])).to(device)
         for b in range(bs):
             for t in range(mel_lens[b]):
                 wt_list = []
