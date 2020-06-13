@@ -50,36 +50,35 @@ class ForwardTrainer:
             g['lr'] = session.lr
 
         m_loss_avg = Averager()
-        dur_loss_avg = Averager()
         duration_avg = Averager()
         device = next(model.parameters()).device  # use same device as model parameters
         for e in range(1, epochs + 1):
-            for i, (x, m, ids, lens, dur) in enumerate(session.train_set, 1):
+            for i, (x, m, ids, lens) in enumerate(session.train_set, 1):
 
                 start = time.time()
                 model.train()
-                x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
+                x, m, lens = x.to(device), m.to(device), lens.to(device)
 
-                m1_hat, m2_hat, dur_hat = model(x, m, dur)
+                m1_hat, m2_hat, dur_hat = model(x, m, lens)
 
                 m1_loss = self.l1_loss(m1_hat, m, lens)
                 m2_loss = self.l1_loss(m2_hat, m, lens)
-                dur_loss = F.l1_loss(dur_hat, dur)
+                #dur_loss = F.l1_loss(dur_hat, dur)
 
-                loss = m1_loss + m2_loss + dur_loss
+                loss = m1_loss + m2_loss
                 optimizer.zero_grad()
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), hp.tts_clip_grad_norm)
                 optimizer.step()
                 m_loss_avg.add(m1_loss.item() + m2_loss.item())
-                dur_loss_avg.add(dur_loss.item())
+                #dur_loss_avg.add(dur_loss.item())
                 step = model.get_step()
                 k = step // 1000
 
                 duration_avg.add(time.time() - start)
                 speed = 1. / duration_avg.get()
                 msg = f'| Epoch: {e}/{epochs} ({i}/{total_iters}) | Mel Loss: {m_loss_avg.get():#.4} ' \
-                      f'| Dur Loss: {dur_loss_avg.get():#.4} | {speed:#.2} steps/s | Step: {k}k | '
+                      f'| {speed:#.2} steps/s | Step: {k}k | '
 
                 if step % hp.forward_checkpoint_every == 0:
                     ckpt_name = f'forward_step{k}K'
@@ -90,45 +89,42 @@ class ForwardTrainer:
                     self.generate_plots(model, session)
 
                 self.writer.add_scalar('Mel_Loss/train', m1_loss + m2_loss, model.get_step())
-                self.writer.add_scalar('Duration_Loss/train', dur_loss, model.get_step())
+                #self.writer.add_scalar('Duration_Loss/train', dur_loss, model.get_step())
                 self.writer.add_scalar('Params/batch_size', session.bs, model.get_step())
                 self.writer.add_scalar('Params/learning_rate', session.lr, model.get_step())
 
                 stream(msg)
 
-            m_val_loss, dur_val_loss = self.evaluate(model, session.val_set)
+            m_val_loss = self.evaluate(model, session.val_set)
             self.writer.add_scalar('Mel_Loss/val', m_val_loss, model.get_step())
-            self.writer.add_scalar('Duration_Loss/val', dur_val_loss, model.get_step())
             save_checkpoint('forward', self.paths, model, optimizer, is_silent=True)
 
             m_loss_avg.reset()
             duration_avg.reset()
             print(' ')
 
-    def evaluate(self, model: ForwardTacotron, val_set: Dataset) -> Tuple[float, float]:
+    def evaluate(self, model: ForwardTacotron, val_set: Dataset) -> float:
         model.eval()
         m_val_loss = 0
         dur_val_loss = 0
         device = next(model.parameters()).device
-        for i, (x, m, ids, lens, dur) in enumerate(val_set, 1):
-            x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
+        for i, (x, m, ids, lens) in enumerate(val_set, 1):
+            x, m, lens = x.to(device), m.to(device), lens.to(device)
             with torch.no_grad():
-                m1_hat, m2_hat, dur_hat = model(x, m, dur)
+                m1_hat, m2_hat, dur_hat = model(x, m, lens)
                 m1_loss = self.l1_loss(m1_hat, m, lens)
                 m2_loss = self.l1_loss(m2_hat, m, lens)
-                dur_loss = F.l1_loss(dur_hat, dur)
                 m_val_loss += m1_loss.item() + m2_loss.item()
-                dur_val_loss += dur_loss.item()
-        return m_val_loss / len(val_set), dur_val_loss / len(val_set)
+        return m_val_loss / len(val_set)
 
     @ignore_exception
     def generate_plots(self, model: ForwardTacotron, session: TTSSession) -> None:
         model.eval()
         device = next(model.parameters()).device
-        x, m, ids, lens, dur = session.val_sample
-        x, m, dur = x.to(device), m.to(device), dur.to(device)
+        x, m, ids, lens = session.val_sample
+        x, m, lens = x.to(device), m.to(device), lens.to(device)
 
-        m1_hat, m2_hat, dur_hat = model(x, m, dur)
+        m1_hat, m2_hat, dur_hat = model(x, m, lens)
         m1_hat = np_now(m1_hat)[0, :600, :]
         m2_hat = np_now(m2_hat)[0, :600, :]
         m = np_now(m)[0, :600, :]
@@ -152,7 +148,7 @@ class ForwardTrainer:
             tag='Ground_Truth_Aligned/postnet_wav', snd_tensor=m2_hat_wav,
             global_step=model.step, sample_rate=hp.sample_rate)
 
-        m1_hat, m2_hat, dur_hat = model.generate(x[0].tolist())
+        m1_hat, m2_hat = model.generate(x[0].tolist())
         m1_hat, m2_hat = rescale_mel(m1_hat), rescale_mel(m2_hat)
         m1_hat_fig = plot_mel(m1_hat)
         m2_hat_fig = plot_mel(m2_hat)

@@ -61,6 +61,7 @@ class DurationPredictor(nn.Module):
         x = x.transpose(1, 2)
         x, _ = self.rnn(x)
         x = self.lin(x)
+        x = F.relu(x)
         return x / alpha
 
 
@@ -124,17 +125,24 @@ class ForwardTacotron(nn.Module):
         self.dropout = dropout
         self.post_proj = nn.Linear(2 * postnet_dims, n_mels, bias=False)
 
-    def forward(self, x, mel, dur):
+    def forward(self, x, mel, mel_lens):
         if self.training:
             self.step += 1
 
         x = self.embedding(x)
         dur_hat = self.dur_pred(x)
         dur_hat = dur_hat.squeeze()
+        sum_durs = torch.sum(dur_hat, dim=1)
 
         x = x.transpose(1, 2)
+        bs = dur_hat.shape[0]
+        for i in range(bs):
+            dur_hat[i] = dur_hat[i] / sum_durs[i] * mel_lens[i]
+
+        sum_durs = torch.sum(dur_hat, dim=1)
+
         x = self.prenet(x)
-        x = self.lr(x, dur)
+        x = self.lr(x, dur_hat)
         x, _ = self.lstm(x)
         x = F.dropout(x,
                       p=self.dropout,
