@@ -151,7 +151,6 @@ class ForwardTacotron(nn.Module):
 
                 norm = torch.sum(wt) + 1e-10
                 v = torch.sum(wt * x_p[b], dim=0) / norm
-                print(f't {v.shape}')
                 x[b, t] = v
 
         x, _ = self.lstm(x)
