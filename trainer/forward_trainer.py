@@ -66,7 +66,7 @@ class ForwardTrainer:
                 m2_loss = self.l1_loss(m2_hat, m, lens)
                 dur_loss = F.l1_loss(dur_hat, lens)
 
-                loss = m1_loss + m2_loss + dur_loss
+                loss = m1_loss + m2_loss + 0.05*dur_loss
                 optimizer.zero_grad()
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), hp.tts_clip_grad_norm)
