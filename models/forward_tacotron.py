@@ -43,11 +43,24 @@ class LengthRegulator(nn.Module):
 
 class DurationPredictor(nn.Module):
 
-    def __init__(self, in_dims):
+    def __init__(self, in_dims, conv_dims=256, rnn_dims=64, dropout=0.5):
         super().__init__()
-        self.lin = nn.Linear(in_dims, 1)
+        self.convs = torch.nn.ModuleList([
+            BatchNormConv(in_dims, conv_dims, 5, activation=torch.relu),
+            BatchNormConv(conv_dims, conv_dims, 5, activation=torch.relu),
+            BatchNormConv(conv_dims, conv_dims, 5, activation=torch.relu),
+        ])
+        self.rnn = nn.GRU(conv_dims, rnn_dims, batch_first=True, bidirectional=True)
+        self.lin = nn.Linear(2 * rnn_dims, 1)
+        self.dropout = dropout
 
     def forward(self, x, alpha=1.0):
+        x = x.transpose(1, 2)
+        for conv in self.convs:
+            x = conv(x)
+            x = F.dropout(x, p=self.dropout, training=self.training)
+        x = x.transpose(1, 2)
+        x, _ = self.rnn(x)
         x = self.lin(x)
         x = F.relu(x)
         return x / alpha
@@ -72,6 +85,7 @@ class BatchNormConv(nn.Module):
 class ConvStack(nn.Module):
     def __init__(self, channel, layers=10):
         super(ConvStack, self).__init__()
+
         self.blocks = nn.ModuleList([
             nn.Sequential(
                 nn.LeakyReLU(0.2),
@@ -83,13 +97,9 @@ class ConvStack(nn.Module):
         ])
 
     def forward(self, x):
-        x = x.transpose(1, 2)
         for block in self.blocks:
             x = block(x)
-        x = x.transpose(1, 2)
-
         return x
-
 
 class ForwardTacotron(nn.Module):
 
@@ -112,22 +122,35 @@ class ForwardTacotron(nn.Module):
         self.rnn_dim = rnn_dim
         self.embedding = nn.Embedding(num_chars, embed_dims)
         self.lr = LengthRegulator()
-        self.dur_pred = DurationPredictor(256)
-        self.prenet = ConvStack(channel=256, layers=10)
-        self.lin = torch.nn.Linear(256, n_mels)
+        self.dur_pred = DurationPredictor(embed_dims,
+                                          conv_dims=durpred_conv_dims,
+                                          rnn_dims=durpred_rnn_dims,
+                                          dropout=durpred_dropout)
+        self.prenet = CBHG(K=prenet_k,
+                           in_channels=embed_dims,
+                           channels=prenet_dims,
+                           proj_channels=[prenet_dims, embed_dims],
+                           num_highways=highways)
+        self.lstm = nn.LSTM(2 * prenet_dims,
+                            rnn_dim,
+                            batch_first=True,
+                            bidirectional=True)
+        self.lin = torch.nn.Linear(2 * rnn_dim, n_mels)
         self.register_buffer('step', torch.zeros(1, dtype=torch.long))
-        self.postnet = ConvStack(256, layers=10)
+        self.postnet = CBHG(K=postnet_k,
+                            in_channels=n_mels,
+                            channels=postnet_dims,
+                            proj_channels=[postnet_dims, n_mels],
+                            num_highways=highways)
         self.dropout = dropout
-        self.post_proj = nn.Linear(256, n_mels, bias=False)
+        self.post_proj = nn.Linear(2 * postnet_dims, n_mels, bias=False)
 
     def forward(self, x, mel, mel_lens):
         if self.training:
             self.step += 1
 
         x = self.embedding(x)
-        x_p = self.prenet(x)
-
-        dur_hat = self.dur_pred(x_p)
+        dur_hat = self.dur_pred(x)
         dur_hat = dur_hat.squeeze()
         sum_durs = torch.sum(dur_hat, dim=1)
         bs = dur_hat.shape[0]
@@ -141,6 +164,9 @@ class ForwardTacotron(nn.Module):
         ends = torch.cumsum(dur_hat, dim=1)
         mids = ends - dur_hat / 2.
 
+        x = x.transpose(1, 2)
+
+        x_p = self.prenet(x)
         device = next(self.parameters()).device
         mel_len = mel.shape[-1]
         seq_len = mids.shape[1]
@@ -169,10 +195,16 @@ class ForwardTacotron(nn.Module):
             v = torch.sum(v, dim=1) / norm
             x[:, t] = v
         """
-        x = self.postnet(x)
-        x = self.post_proj(x)
+        x, _ = self.lstm(x)
+        x = F.dropout(x,
+                      p=self.dropout,
+                      training=self.training)
+        x = self.lin(x)
         x = x.transpose(1, 2)
-        x_post = x
+        x_post = self.postnet(x)
+        x_post = self.post_proj(x_post)
+        x_post = x_post.transpose(1, 2)
+
         x_post = self.pad(x_post, mel.size(2))
         x = self.pad(x, mel.size(2))
 
