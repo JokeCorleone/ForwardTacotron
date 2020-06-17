@@ -15,8 +15,12 @@ from utils import hparams as hp
 hp.configure('hparams.py')  # Load hparams from file
 
 text_dict = unpickle_binary('data/text_dict.pkl')
-mel = np.load('data/mel/02075.npy')
-text = text_dict['02075']
+
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+else:
+    device = torch.device('cpu')
+print('Using device:', device)
 
 device = torch.device('cpu')
 model = Aligner(n_mels=80, lstm_dim=256, num_symbols=len(phonemes)).to(device)
@@ -24,11 +28,14 @@ model.load('checkpoints/asvoice_tts.aligner/latest_weights.pyt')
 paths = Paths(hp.data_path, hp.voc_model_id, hp.tts_model_id)
 print(f'loaded aligner step {model.get_step()}')
 
+
+
 for num_id, id in enumerate(text_dict):
     print(f'predict {id}, {num_id}/{len(text_dict)}')
     mel = np.load(f'data/mel/{id}.npy')
 
-    mel = torch.tensor(mel)
+    mel = torch.tensor(mel).to(device)
+    text = text_dict[id]
     seq = text_to_sequence(text)
     seq = torch.tensor(seq)
     pred = model(mel.unsqueeze(0).transpose(1, 2))
