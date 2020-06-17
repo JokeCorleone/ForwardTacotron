@@ -103,7 +103,7 @@ for node_index in reversed(path):
     pred_letter_s2 = sequence_to_text([pred[i].argsort()[-2]])
     pred_letter_s3 = sequence_to_text([pred[i].argsort()[-3]])
 
-    print(f'{i} {j} {letter} {pred_letter} {pred_max[i, j]} ({pred_letter_s1} | {pred_letter_s2} | {pred_letter_s3}) ')
+    print(f'{i} {j} {letter} {pred_letter} {pred_max[i, j]} | {pred_letter_s1} | {pred_letter_s2} | {pred_letter_s3} | ')
     mel_text[i] = j
 
 for j in mel_text.values():
