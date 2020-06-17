@@ -107,19 +107,3 @@ class AlignmentTrainer:
             loss_avg.reset()
             duration_avg.reset()
             print(' ')
-
-    def evaluate(self, model: ForwardTacotron, val_set: Dataset) -> Tuple[float, float]:
-        model.eval()
-        m_val_loss = 0
-        dur_val_loss = 0
-        device = next(model.parameters()).device
-        for i, (x, m, ids, lens, dur) in enumerate(val_set, 1):
-            x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
-            with torch.no_grad():
-                m1_hat, m2_hat, dur_hat = model(x, m, dur)
-                m1_loss = self.l1_loss(m1_hat, m, lens)
-                m2_loss = self.l1_loss(m2_hat, m, lens)
-                dur_loss = F.l1_loss(dur_hat, dur)
-                m_val_loss += m1_loss.item() + m2_loss.item()
-                dur_val_loss += dur_loss.item()
-        return m_val_loss / len(val_set), dur_val_loss / len(val_set)
