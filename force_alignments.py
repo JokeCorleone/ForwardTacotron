@@ -112,7 +112,8 @@ for num_id, id in enumerate(text_dict):
 
     for j in mel_text.values():
         durations[j] += 1
-
+    print(text)
+    print(durations)
     print(f'sum durs: {sum(durations)} mel shape {mel.shape}')
 
     np.save(paths.alg2/f'{id}.npy', np.array(durations))
