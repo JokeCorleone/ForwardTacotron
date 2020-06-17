@@ -14,8 +14,8 @@ from utils import hparams as hp
 hp.configure('hparams.py')  # Load hparams from file
 
 text_dict = unpickle_binary('data/text_dict.pkl')
-mel = np.load('data/mel/02072.npy')
-text = text_dict['02072']
+mel = np.load('data/mel/02075.npy')
+text = text_dict['02075']
 
 device = torch.device('cpu')
 model = Aligner(n_mels=80, lstm_dim=256, num_symbols=len(phonemes)).to(device)
@@ -23,7 +23,6 @@ model.load('checkpoints/asvoice_tts.aligner/latest_weights.pyt')
 
 print(f'loaded aligner step {model.get_step()}')
 mel = torch.tensor(mel)
-text = german_cleaners(text)
 seq = text_to_sequence(text)
 seq = torch.tensor(seq)
 pred = model(mel.unsqueeze(0).transpose(1, 2))
@@ -87,29 +86,40 @@ while pr_index != 0:
     path.append(pr_index)
     pr_index = predecessors[pr_index]
 path.reverse()
+# append first and last
+path = [0] + path + [dist_matrix.size-1]
 cols = pred_max.shape[1]
-result = []
+
+mel_text = {}
+durations = np.zeros(seq.shape[0])
+print(f'dur shape {durations.shape}')
 for node_index in path:
     i, j = from_node_index(node_index, cols)
     letter = sequence_to_text([target[j]])
     pred_letter = sequence_to_text([np.argmax(pred[i], axis=-1)])
-    #print(f'{i} {j} {letter} {pred_letter} {pred_max[i, j]}')
-    result.append(j)
+    print(f'{i} {j} {letter} {pred_letter} {pred_max[i, j]}')
+    mel_text[i] = j
 
-#print(result)
+for j in mel_text.values():
+    durations[j] += 1
 
-indices = []
-for r in result:
-    indices.append(target[r])
+#for i in range(len(durations)):
+#    print(f'{text[i]} {durations[i]} ')
+#print(durations)
+#print(sum(durations))
+#print(mel.shape)
+#indices = []
+#for r in result:
+#    indices.append(target[r])
 
-
+#print(indices)
 #print(sequence_to_text(indices))
 #print()
-max_indices = np.argmax(pred, axis=-1)
+#max_indices = np.argmax(pred, axis=-1)
 #print(max_indices)
-print(sequence_to_text(max_indices))
-print()
-print(sequence_to_text(target))
+#print(sequence_to_text(max_indices))
+#print(text)
+#print(sequence_to_text(target))
 #print(tokenizer.decode(result))
 
 #print(dist_matrix)
