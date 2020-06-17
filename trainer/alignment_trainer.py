@@ -25,7 +25,7 @@ class AlignmentTrainer:
 
     def __init__(self, paths: Paths) -> None:
         self.paths = paths
-        self.writer = SummaryWriter(log_dir=paths.forward_log, comment='v1')
+        self.writer = SummaryWriter(log_dir=paths.aligner_log, comment='v1')
         self.ctc_loss = CTCLoss()
 
     def train(self, model: Aligner, optimizer: Optimizer) -> None:

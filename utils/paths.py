@@ -74,6 +74,10 @@ class Paths:
         os.makedirs(self.forward_output, exist_ok=True)
         os.makedirs(self.forward_attention, exist_ok=True)
         os.makedirs(self.forward_mel_plot, exist_ok=True)
+        os.makedirs(self.aligner_checkpoints, exist_ok=True)
+        os.makedirs(self.aligner_output, exist_ok=True)
+        os.makedirs(self.aligner_attention, exist_ok=True)
+        os.makedirs(self.aligner_mel_plot, exist_ok=True)
 
     def get_tts_named_weights(self, name):
         """Gets the path for the weights in a named tts checkpoint."""
