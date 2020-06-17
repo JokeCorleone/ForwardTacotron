@@ -97,14 +97,14 @@ for node_index in path:
     i, j = from_node_index(node_index, cols)
     letter = sequence_to_text([target[j]])
     pred_letter = sequence_to_text([np.argmax(pred[i], axis=-1)])
-    print(f'{i} {j} {letter} {pred_letter} {pred_max[i, j]}')
+    #print(f'{i} {j} {letter} {pred_letter} {pred_max[i, j]}')
     mel_text[i] = j
 
 for j in mel_text.values():
     durations[j] += 1
 
-#for i in range(len(durations)):
-#    print(f'{text[i]} {durations[i]} ')
+for i in range(len(durations)):
+    print(f'{text[i]} {durations[i]} ')
 #print(durations)
 #print(sum(durations))
 #print(mel.shape)
