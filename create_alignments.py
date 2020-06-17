@@ -104,6 +104,19 @@ for node_index in reversed(path):
 for j in mel_text.values():
     durations[j] += 1
 
+    # correct for missing durs
+    for i in range(len(durations)):
+        if durations[i] == 0:
+            left_dur = 0
+            right_dur = 0
+            if i > 0: left_dur = durations[i-1]
+            if i < len(durations) - 1: right_dur = durations[i+1]
+            if left_dur > right_dur and left_dur > 1:
+                durations[i] += 1
+                durations[i - 1] -= 1
+            if right_dur > left_dur and right_dur > 1:
+                durations[i] += 1
+                durations[i + 1] -= 1
 print(f'durs: {durations}')
 #for i in range(len(durations)):
 #    print(f'{text[i]} {durations[i]} ')
