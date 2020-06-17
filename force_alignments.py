@@ -39,7 +39,7 @@ for num_id, id in enumerate(text_dict):
     seq = torch.tensor(seq)
     pred = model(mel.unsqueeze(0).transpose(1, 2))
     pred = torch.softmax(pred, dim=-1)
-    pred = pred.detach()[0].numpy()
+    pred = pred.detach()[0].cpu().numpy()
     target = seq.numpy()
 
     target_len = target.shape[0]
