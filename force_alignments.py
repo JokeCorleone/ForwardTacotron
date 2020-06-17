@@ -23,7 +23,7 @@ else:
 print('Using device:', device)
 
 model = Aligner(n_mels=80, lstm_dim=256, num_symbols=len(phonemes)).to(device)
-model.load('checkpoints/asvoice_tts.aligner/latest_weights.pyt')
+model.load('checkpoints/asvoice_newdurs_tts.aligner/latest_weights.pyt')
 model.eval()
 paths = Paths(hp.data_path, hp.voc_model_id, hp.tts_model_id)
 print(f'loaded aligner step {model.get_step()}')
@@ -104,7 +104,7 @@ for num_id, id in enumerate(text_dict):
 
     mel_text = {}
     durations = np.zeros(seq.shape[0])
-    for node_index in path:
+    for node_index in reversed(path):
         i, j = from_node_index(node_index, cols)
         letter = sequence_to_text([target[j]])
         pred_letter = sequence_to_text([np.argmax(pred[i], axis=-1)])
