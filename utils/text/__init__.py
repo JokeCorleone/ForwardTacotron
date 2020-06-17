@@ -6,8 +6,8 @@ from utils.text.cleaners import to_phonemes
 from utils.text.symbols import phonemes
 
 # Mappings from symbol to numeric ID and vice versa:
-_symbol_to_id = {s: i for i, s in enumerate(phonemes)}
-_id_to_symbol = {i: s for i, s in enumerate(phonemes)}
+_symbol_to_id = {s: i for i, s in enumerate(phonemes, 1)}
+_id_to_symbol = {i: s for i, s in enumerate(phonemes, 1)}
 
 # Regular expression matching text enclosed in curly braces:
 _curly_re = re.compile(r'(.*?)\{(.+?)\}(.*)')
