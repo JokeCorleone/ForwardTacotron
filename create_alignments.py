@@ -98,7 +98,11 @@ for node_index in reversed(path):
     i, j = from_node_index(node_index, cols)
     letter = sequence_to_text([target[j]])
     pred_letter = sequence_to_text([np.argmax(pred[i], axis=-1)])
-    print(f'{i} {j} {letter} {pred_letter} {pred_max[i, j]}')
+
+    pred_letter_s1 = sequence_to_text([pred[i].argsort()[-1]])
+    pred_letter_s2 = sequence_to_text([pred[i].argsort()[-2]])
+
+    print(f'{i} {j} {letter} {pred_letter} {pred_max[i, j]} {pred_letter_s1} {pred_letter_s2} ')
     mel_text[i] = j
 
 for j in mel_text.values():
