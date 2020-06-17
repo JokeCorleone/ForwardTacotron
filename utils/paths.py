@@ -43,6 +43,16 @@ class Paths:
         self.forward_attention = self.forward_checkpoints/'attention'
         self.forward_mel_plot = self.forward_checkpoints/'mel_plots'
 
+        # Aligner Paths
+        self.aligner_checkpoints = self.base/'checkpoints'/f'{tts_id}.aligner'
+        self.aligner_latest_weights = self.aligner_checkpoints/'latest_weights.pyt'
+        self.aligner_latest_optim = self.aligner_checkpoints/'latest_optim.pyt'
+        self.aligner_output = self.base/'model_outputs'/f'{tts_id}.aligner'
+        self.aligner_step = self.aligner_checkpoints/'step.npy'
+        self.aligner_log = self.aligner_checkpoints/'tensorboard'
+        self.aligner_attention = self.aligner_checkpoints/'attention'
+        self.aligner_mel_plot = self.aligner_checkpoints/'mel_plots'
+
         self.create_paths()
 
     def create_paths(self):

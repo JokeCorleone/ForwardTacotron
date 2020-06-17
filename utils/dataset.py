@@ -115,6 +115,9 @@ def get_tts_datasets(path: Path, batch_size, r, model_type='tacotron'):
     elif model_type == 'forward':
         train_dataset = ForwardDataset(path, train_ids, text_dict)
         val_dataset = ForwardDataset(path, val_ids, text_dict)
+    elif model_type == 'aligner':
+        train_dataset = AlignerDataset(path, train_ids, text_dict)
+        val_dataset = AlignerDataset(path, val_ids, text_dict)
     else:
         raise ValueError(f'Unknown model: {model_type}, must be either [tacotron, forward]!')
 
@@ -187,6 +190,25 @@ class ForwardDataset(Dataset):
         return len(self.metadata)
 
 
+class AlignerDataset(Dataset):
+
+    def __init__(self, path: Path, dataset_ids, text_dict):
+        self.path = path
+        self.metadata = dataset_ids
+        self.text_dict = text_dict
+
+    def __getitem__(self, index):
+        item_id = self.metadata[index]
+        text = self.text_dict[item_id]
+        x = text_to_sequence(text)
+        mel = np.load(self.path/'mel'/f'{item_id}.npy')
+        mel_len = mel.shape[-1]
+        return x, mel, item_id, mel_len
+
+    def __len__(self):
+        return len(self.metadata)
+
+
 def pad1d(x, max_len):
     return np.pad(x, (0, max_len - len(x)), mode='constant')
 
@@ -221,6 +243,28 @@ def collate_tts(batch, r):
         return chars, mel, ids, mel_lens, dur
     else:
         return chars, mel, ids, mel_lens
+
+
+def collate_aligner(batch, r):
+    x_lens = [len(x[0]) for x in batch]
+    max_x_len = max(x_lens)
+    chars = [pad1d(x[0], max_x_len) for x in batch]
+    chars = np.stack(chars)
+    spec_lens = [x[1].shape[-1] for x in batch]
+    max_spec_len = max(spec_lens) + 1
+    if max_spec_len % r != 0:
+        max_spec_len += r - max_spec_len % r
+    mel = [pad2d(x[1], max_spec_len) for x in batch]
+    mel = np.stack(mel)
+    ids = [x[2] for x in batch]
+    seq_lens = torch.tenxor(x_lens)
+    mel_lens = [x[3] for x in batch]
+    mel_lens = torch.tensor(mel_lens)
+    chars = torch.tensor(chars).long()
+    mel = torch.tensor(mel)
+    # scale spectrograms to -4 <--> 4
+    #mel = (mel * 8.) - 4.
+    return chars, mel, ids, mel_lens, seq_lens
 
 
 class BinnedLengthSampler(Sampler):

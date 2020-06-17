@@ -19,6 +19,10 @@ def get_checkpoint_paths(checkpoint_type: str, paths: Paths):
         weights_path = paths.forward_latest_weights
         optim_path = paths.forward_latest_optim
         checkpoint_path = paths.forward_checkpoints
+    elif checkpoint_type is 'aligner':
+        weights_path = paths.aligner_latest_weights
+        optim_path = paths.aligner_latest_optim
+        checkpoint_path = paths.aligner_checkpoints
     elif checkpoint_type is 'voc':
         weights_path = paths.voc_latest_weights
         optim_path = paths.voc_latest_optim
