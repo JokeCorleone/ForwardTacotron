@@ -132,5 +132,5 @@ forward_plot_every = 1000
 
 
 
-aligner_scheduler = [(1e-4, 200_000,  32)]   # (lr, step, batch_size)
+aligner_schedule = [(1e-4, 200_000,  8)]   # (lr, step, batch_size)
 

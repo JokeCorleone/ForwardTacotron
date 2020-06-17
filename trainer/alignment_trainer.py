@@ -18,6 +18,7 @@ from utils.decorators import ignore_exception
 from utils.display import stream, simple_table, plot_mel
 from utils.dsp import reconstruct_waveform, rescale_mel, np_now
 from utils.paths import Paths
+from utils.text import sequence_to_text
 
 
 class AlignmentTrainer:
@@ -32,7 +33,7 @@ class AlignmentTrainer:
             lr, max_step, bs = session_params
             if model.get_step() < max_step:
                 train_set, val_set = get_tts_datasets(
-                    path=self.paths.data, batch_size=bs, r=1, model_type='forward')
+                    path=self.paths.data, batch_size=bs, r=1, model_type='aligner')
                 session = TTSSession(
                     index=i, r=1, lr=lr, max_step=max_step,
                     bs=bs, train_set=train_set, val_set=val_set)
@@ -59,8 +60,10 @@ class AlignmentTrainer:
 
                 start = time.time()
                 model.train()
-                x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
+                x, m, mel_lens, seq_lens = x.to(device), m.to(device), \
+                                                mel_lens.to(device), seq_lens.to(device)
 
+                m = m.transpose(1, 2)
                 model.train()
                 pred = model(m)
                 pred = pred.transpose(0, 1).log_softmax(2)
@@ -78,6 +81,16 @@ class AlignmentTrainer:
                 speed = 1. / duration_avg.get()
                 msg = f'| Epoch: {e}/{epochs} ({i}/{total_iters}) | Loss: {loss_avg.get():#.4} ' \
                       f'| {speed:#.2} steps/s | Step: {k}k | '
+
+                first_pred = pred.transpose(0, 1)[0].max(1)[1].detach().cpu().numpy().tolist()
+                first_pred_d = sequence_to_text(first_pred)
+                first_target = x[0].detach().cpu().numpy().tolist()
+                first_target_d = sequence_to_text(first_target)
+
+                if model.get_step() % 1000 == 0:
+                    print()
+                    print(f'pred dec: {first_pred_d}')
+                    print(f'target dec: {first_target_d}')
 
                 if step % hp.forward_checkpoint_every == 0:
                     ckpt_name = f'forward_step{k}K'

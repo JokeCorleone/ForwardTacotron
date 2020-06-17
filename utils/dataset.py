@@ -118,6 +118,23 @@ def get_tts_datasets(path: Path, batch_size, r, model_type='tacotron'):
     elif model_type == 'aligner':
         train_dataset = AlignerDataset(path, train_ids, text_dict)
         val_dataset = AlignerDataset(path, val_ids, text_dict)
+        train_sampler = BinnedLengthSampler(train_lens, batch_size, batch_size * 3)
+
+        train_set = DataLoader(train_dataset,
+                               collate_fn=lambda batch: collate_aligner(batch, r),
+                               batch_size=batch_size,
+                               sampler=train_sampler,
+                               num_workers=1,
+                               pin_memory=True)
+
+        val_set = DataLoader(val_dataset,
+                             collate_fn=lambda batch: collate_aligner(batch, r),
+                             batch_size=batch_size,
+                             sampler=None,
+                             num_workers=1,
+                             shuffle=False,
+                             pin_memory=True)
+        return train_set, val_set
     else:
         raise ValueError(f'Unknown model: {model_type}, must be either [tacotron, forward]!')
 
@@ -257,7 +274,7 @@ def collate_aligner(batch, r):
     mel = [pad2d(x[1], max_spec_len) for x in batch]
     mel = np.stack(mel)
     ids = [x[2] for x in batch]
-    seq_lens = torch.tenxor(x_lens)
+    seq_lens = torch.tensor(x_lens)
     mel_lens = [x[3] for x in batch]
     mel_lens = torch.tensor(mel_lens)
     chars = torch.tensor(chars).long()
