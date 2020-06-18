@@ -36,10 +36,12 @@ class Aligner(torch.nn.Module):
             BatchNormConv(n_mels, 256, 5, activation=torch.relu, dropout=0),
             BatchNormConv(256, 256, 5, activation=torch.relu, dropout=0),
             BatchNormConv(256, 256, 5, activation=torch.relu, dropout=0),
+            BatchNormConv(256, 256, 5, activation=torch.relu, dropout=0),
+            BatchNormConv(256, 256, 5, activation=torch.relu, dropout=0),
         ])
         self.rnn = torch.nn.LSTM(
             256, lstm_dim, batch_first=True, bidirectional=True)
-        self.lin = torch.nn.Linear(2 * lstm_dim, num_symbols)
+        self.lin = torch.nn.Linear(256, num_symbols)
 
     def forward(self, x):
         if self.train:
@@ -48,7 +50,7 @@ class Aligner(torch.nn.Module):
         for conv in self.convs:
             x = conv(x)
         x.transpose_(1, 2)
-        x, _ = self.rnn(x)
+        #x, _ = self.rnn(x)
         x = self.lin(x)
         return x
 
