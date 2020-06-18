@@ -33,11 +33,11 @@ class Aligner(torch.nn.Module):
         super().__init__()
         self.register_buffer('step', torch.tensor(1, dtype=torch.int))
         self.convs = nn.ModuleList([
-            BatchNormConv(n_mels, 256, 5, activation=torch.relu, dropout=0),
-            BatchNormConv(256, 256, 5, activation=torch.relu, dropout=0),
-            BatchNormConv(256, 256, 5, activation=torch.relu, dropout=0),
-            BatchNormConv(256, 256, 5, activation=torch.relu, dropout=0),
-            BatchNormConv(256, 256, 5, activation=torch.relu, dropout=0),
+            BatchNormConv(n_mels, 256, 3, activation=torch.relu, dropout=0),
+            #BatchNormConv(256, 256, 5, activation=torch.relu, dropout=0),
+            #BatchNormConv(256, 256, 5, activation=torch.relu, dropout=0),
+            #BatchNormConv(256, 256, 5, activation=torch.relu, dropout=0),
+            #BatchNormConv(256, 256, 5, activation=torch.relu, dropout=0),
         ])
         self.rnn = torch.nn.LSTM(
             256, lstm_dim, batch_first=True, bidirectional=True)
@@ -50,7 +50,7 @@ class Aligner(torch.nn.Module):
         for conv in self.convs:
             x = conv(x)
         x.transpose_(1, 2)
-        #x, _ = self.rnn(x)
+        x, _ = self.rnn(x)
         x = self.lin(x)
         return x
 
