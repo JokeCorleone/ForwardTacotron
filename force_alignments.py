@@ -104,7 +104,7 @@ for num_id, id in enumerate(text_dict):
 
     mel_text = {}
     durations = np.zeros(seq.shape[0])
-    for node_index in reversed(path):
+    for node_index in path:
         i, j = from_node_index(node_index, cols)
         letter = sequence_to_text([target[j]])
         pred_letter = sequence_to_text([np.argmax(pred[i], axis=-1)])

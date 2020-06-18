@@ -94,16 +94,28 @@ cols = pred_max.shape[1]
 mel_text = {}
 durations = np.zeros(seq.shape[0])
 print(f'dur shape {durations.shape}')
-for node_index in reversed(path):
+
+for node_index in path:
     i, j = from_node_index(node_index, cols)
+
+    this_k = target[j]
     letter = sequence_to_text([target[j]])
+    next_k = None
+    next_letter = None
+    if j + 1 < len(target):
+        next_k = target[j+1]
+        next_letter = sequence_to_text([target[j+1]])
+
+    this_prob = pred[i, this_k]
+    next_prob = pred[i, next_k]
+
     pred_letter = sequence_to_text([np.argmax(pred[i], axis=-1)])
 
     pred_letter_s1 = sequence_to_text([pred[i].argsort()[-1]])
     pred_letter_s2 = sequence_to_text([pred[i].argsort()[-2]])
     pred_letter_s3 = sequence_to_text([pred[i].argsort()[-3]])
 
-    print(f'{i} {j} {letter} {pred_letter} {pred_max[i, j]} | {pred_letter_s1} | {pred_letter_s2} | {pred_letter_s3} | ')
+    print(f'{i} {j} {letter} {pred_letter} {pred_max[i, j]} | {letter} {this_prob} | {next_letter} {next_prob} | ')
     mel_text[i] = j
 
 for j in mel_text.values():
@@ -123,6 +135,7 @@ for j in mel_text.values():
                 durations[i] += 1
                 durations[i + 1] -= 1
 print(f'durs: {durations}')
+
 #for i in range(len(durations)):
 #    print(f'{text[i]} {durations[i]} ')
 #print(durations)
