@@ -90,7 +90,7 @@ tts_stop_threshold = -3.4           # Value below which audio generation ends.
 
 # Training
 
-tts_schedule = [(10,  1e-3,  10_000,  32),   # progressive training schedule
+tts_schedule = [(10,  1e-4,  10_000,  32),   # progressive training schedule
                 (5,  1e-4, 20_000,  16),   # (r, lr, step, batch_size)
                 (2,  1e-4, 30_000,  8),
                 (1,  1e-4, 50_000,  8)]
@@ -98,7 +98,7 @@ tts_schedule = [(10,  1e-3,  10_000,  32),   # progressive training schedule
 tts_max_mel_len = 1250              # if you have a couple of extremely long spectrograms you might want to use this
 tts_clip_grad_norm = 1.0            # clips the gradient norm to prevent explosion - set to None if not needed
 tts_checkpoint_every = 10_000        # checkpoints the model every X steps
-tts_plot_every = 1000
+tts_plot_every = 100
 
 # ------------------------------------------------------------------------------------------------------------------#
 
