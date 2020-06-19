@@ -41,7 +41,7 @@ def encode_16bits(x):
 
 def linear_to_mel(spectrogram):
     return librosa.feature.melspectrogram(
-        S=spectrogram, sr=hp.sample_rate, n_fft=hp.n_fft, n_mels=hp.num_mels, fmin=0, fmax=8000)
+        S=spectrogram, sr=hp.sample_rate, n_fft=hp.n_fft, n_mels=hp.num_mels, fmin=hp.fmin, fmax=hp.fmax)
 
 '''
 def build_mel_basis():
@@ -60,7 +60,7 @@ def denormalize(S):
 
 def melspectrogram(y):
     D = stft(y)
-    S = normalize(linear_to_mel(np.abs(D)))
+    S = linear_to_mel(np.abs(D))
     return normalize(S)
 
 def raw_melspec(y):
@@ -114,7 +114,7 @@ def reconstruct_waveform(mel, n_iter=32):
     #amp_mel = db_to_amp(denormalized)
     S = librosa.feature.inverse.mel_to_stft(
         denormalized, power=1, sr=hp.sample_rate,
-        n_fft=hp.n_fft, fmin=hp.fmin)
+        n_fft=hp.n_fft, fmin=hp.fmin, fmax=hp.fmax)
     wav = librosa.core.griffinlim(
         S, n_iter=n_iter,
         hop_length=hp.hop_length, win_length=hp.win_length)

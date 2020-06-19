@@ -24,6 +24,7 @@ num_mels = 80
 hop_length = 256                    # 12.5ms - in line with Tacotron 2 paper
 win_length = 1024                   # 50ms - same reason as above
 fmin = 0
+fmax = 8000
 min_level_db = 0
 ref_level_db = 0
 bits = 9                            # bit depth of signal
