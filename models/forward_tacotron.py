@@ -135,8 +135,8 @@ class ForwardTacotron(nn.Module):
         sum_durs = torch.sum(dur_hat, dim=1)
 
         bs = dur.shape[0]
-        ends = torch.cumsum(dur.float(), dim=1)
-        mids = ends - dur.float() / 2.
+        ends = torch.cumsum(dur_hat.float(), dim=1)
+        mids = ends - dur_hat.float() / 2.
 
         for i in range(bs):
             mel_len = torch.sum(dur[i])
