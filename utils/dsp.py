@@ -99,10 +99,10 @@ def decode_mu_law(y, mu, from_labels=True):
 
 
 def rescale_mel(m):
-    m = (m + 4) / 8
-    np.clip(m, 0, 1, out=m)
+    #m = (m + 4) / 8
+    #np.clip(m, 0, 1, out=m)
+    #return m
     return m
-
 
 def np_now(x: torch.Tensor): return x.detach().cpu().numpy()
 
