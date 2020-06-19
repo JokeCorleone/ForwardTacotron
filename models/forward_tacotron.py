@@ -133,8 +133,8 @@ class ForwardTacotron(nn.Module):
         dur_hat = dur_hat.squeeze()
 
         bs = dur.shape[0]
-        ends = torch.cumsum(dur, dim=1)
-        mids = ends - dur / 2.
+        ends = torch.cumsum(dur.float(), dim=1)
+        mids = ends - dur.float() / 2.
 
         x = x.transpose(1, 2)
         x_p = self.prenet(x)
