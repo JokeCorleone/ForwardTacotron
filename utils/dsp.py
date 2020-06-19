@@ -50,7 +50,7 @@ def build_mel_basis():
 
 
 def normalize(S):
-    S = np.clip(S, a_min=1e-5, a_max=None)
+    S = np.clip(S, a_min=1.e-5, a_max=None)
     return np.log(S)
 
 
