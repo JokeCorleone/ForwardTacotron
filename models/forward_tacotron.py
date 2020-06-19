@@ -134,7 +134,31 @@ class ForwardTacotron(nn.Module):
 
         x = x.transpose(1, 2)
         x = self.prenet(x)
-        x = self.lr(x, dur)
+
+        bs = dur.shape[0]
+        ends = torch.cumsum(dur, dim=1)
+        mids = ends - dur_hat / 2.
+        x = x.transpose(1, 2)
+
+        x_p = self.prenet(x)
+        device = next(self.parameters()).device
+        mel_len = mel.shape[-1]
+        seq_len = mids.shape[1]
+
+        t_range = torch.arange(0, mel_len).long().to(device)
+        t_range = t_range.unsqueeze(0)
+        t_range = t_range.expand(bs, mel_len)
+        t_range = t_range.unsqueeze(-1)
+        t_range = t_range.expand(bs, mel_len, seq_len)
+
+        mids = mids.unsqueeze(1)
+        diff = t_range - mids
+        logits = -diff ** 2 / 10. - 1e-9
+        weights = torch.softmax(logits, dim=2)
+        x = torch.einsum('bij,bjk->bik', weights, x_p)
+
+
+        #x = self.lr(x, dur)
         x, _ = self.lstm(x)
         x = F.dropout(x,
                       p=self.dropout,
