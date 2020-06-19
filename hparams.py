@@ -7,8 +7,8 @@ data_path = 'data/'
 
 # model ids are separate - that way you can use a new tts with an old wavernn and vice versa
 # NB: expect undefined behaviour if models were trained on different DSP settings
-voc_model_id = 'asvoice_newdurslog_raw'
-tts_model_id = 'asvoice_newdurslog_tts'
+voc_model_id = 'asvoice_newdurs_raw'
+tts_model_id = 'asvoice_newdurs_tts'
 
 # set this to True if you are only interested in WaveRNN
 ignore_tts = False
@@ -21,11 +21,11 @@ sample_rate = 22050
 n_fft = 2048
 fft_bins = n_fft // 2 + 1
 num_mels = 80
-hop_length = 275                    # 12.5ms - in line with Tacotron 2 paper
-win_length = 1100                   # 50ms - same reason as above
-fmin = 40
-min_level_db = -100
-ref_level_db = 20
+hop_length = 256                    # 12.5ms - in line with Tacotron 2 paper
+win_length = 1024                   # 50ms - same reason as above
+fmin = 0
+min_level_db = 0
+ref_level_db = 0
 bits = 9                            # bit depth of signal
 mu_law = True                       # Recommended to suppress noise if using raw bits in hp.voc_mode below
 peak_norm = False                   # Normalise to the peak of each wav file

@@ -27,7 +27,7 @@ mel = torch.tensor(mel)
 seq = text_to_sequence(text)
 seq = torch.tensor(seq)
 pred = model(mel.unsqueeze(0).transpose(1, 2))
-#pred = torch.softmax(pred, dim=-1)
+pred = torch.log_softmax(pred, dim=-1)
 pred = pred.detach()[0].numpy()
 target = seq.numpy()
 
@@ -37,7 +37,7 @@ print(pred.shape)
 pred_max = np.zeros((pred_len, target_len))
 
 for i in range(pred_len):
-    weight = 1. - pred[i, target]
+    weight = - pred[i, target]
     pred_max[i] = weight
 
 def to_node_index(i, j, cols):
