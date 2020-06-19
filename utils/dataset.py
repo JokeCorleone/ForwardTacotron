@@ -116,7 +116,7 @@ def get_tts_datasets(path: Path, batch_size, r, model_type='tacotron'):
         train_dataset = ForwardDataset(path, train_ids, text_dict)
         val_dataset = ForwardDataset(path, val_ids, text_dict)
     elif model_type == 'aligner':
-        train_dataset = AlignerDataset(path, train_ids, text_dict)
+        train_dataset = AlignerDataset(path, train_ids + val_ids, text_dict)
         val_dataset = AlignerDataset(path, val_ids, text_dict)
         train_sampler = BinnedLengthSampler(train_lens, batch_size, batch_size * 3)
 
