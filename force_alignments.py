@@ -6,6 +6,7 @@ from scipy.sparse.csr import csr_matrix
 import torch
 
 from models.aligner import Aligner
+from utils.dataset import filter_max_len
 from utils.files import unpickle_binary
 from utils.paths import Paths
 from utils.text import phonemes, text_to_sequence, sequence_to_text
@@ -28,9 +29,11 @@ model.eval()
 paths = Paths(hp.data_path, hp.voc_model_id, hp.tts_model_id)
 print(f'loaded aligner step {model.get_step()}')
 
+val_data = unpickle_binary('data/val_dataset.pkl')
+train_ids, train_lens = filter_max_len(val_data)
+val_ids, val_lens = filter_max_len(val_data)
 
-
-for num_id, id in enumerate(text_dict):
+for num_id, id in enumerate(val_ids):
     print(f'predict {id}, {num_id}/{len(text_dict)}')
     mel = np.load(f'data/mel/{id}.npy')
 
