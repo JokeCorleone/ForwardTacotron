@@ -101,7 +101,8 @@ print(f'dur shape {durations.shape}')
 for node_index in path:
     i, j = from_node_index(node_index, cols)
 
-    prob = pred[i, j]
+    k = target[j]
+    prob = pred[i, k]
     tm_prob = text_mel_prob.get(j, -1e10)
     if prob > tm_prob:
         text_mel[j] = i
