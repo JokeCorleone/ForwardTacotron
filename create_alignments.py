@@ -99,7 +99,6 @@ durations = np.zeros(seq.shape[0])
 durations_new = np.zeros(seq.shape[0])
 
 print(f'dur shape {durations.shape}')
-
 for node_index in path:
     i, j = from_node_index(node_index, cols)
 
@@ -109,6 +108,10 @@ for node_index in path:
     if prob > tm_prob:
         text_mel[j] = i
         text_mel_prob[j] = prob
+
+
+for node_index in path:
+    i, j = from_node_index(node_index, cols)
 
     this_k = target[j]
     letter = sequence_to_text([target[j]])
@@ -127,18 +130,23 @@ for node_index in path:
     pred_letter_s2 = sequence_to_text([pred[i].argsort()[-2]])
     pred_letter_s3 = sequence_to_text([pred[i].argsort()[-3]])
 
-    print(f'{i} {j} {letter} {pred_letter} {pred_max[i, j]} | {letter} {this_prob} | {next_letter} {next_prob} | ')
-    mel_text[i] = j
+    tm_letter = '*'
+    if text_mel[j] == i:
+        tm_letter = sequence_to_text([target[j]])
 
+
+    print(f'{i} {j} {letter} {pred_letter} {tm_letter} | {pred_max[i, j]}')
+    mel_text[i] = j
 
 print('text mel')
 print(text_mel)
-print('text mel prob')
-print(text_mel_prob)
+#print('text mel prob')
+#print(text_mel_prob)
 
-durations_new[0] = text_mel[1] + (text_mel[2] - text_mel[1]) // 2
-for j in range(1, len(text_mel)-1):
-    durations_new[j] = (text_mel[j+1] - sum(durations_new[:j-1])) // 2
+sum_durs = 0
+for j in range(len(text_mel)-1):
+    durations_new[j] = (text_mel[j] + text_mel[j+1]) // 2 - sum_durs
+    sum_durs += durations_new[j]
 durations_new[-1] = len(mel_text) - sum(durations_new)
 
 
@@ -161,7 +169,6 @@ for j in mel_text.values():
 
 print(f'durs: {durations}')
 print(f'durs_new: {durations_new}')
-
 #for i in range(len(durations)):
 #    print(f'{text[i]} {durations[i]} ')
 #print(durations)

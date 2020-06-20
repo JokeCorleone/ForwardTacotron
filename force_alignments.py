@@ -111,6 +111,18 @@ for num_id, id in enumerate(val_ids):
     text_mel_prob = {}
 
     durations = np.zeros(seq.shape[0])
+    durations_new = np.zeros(seq.shape[0])
+
+    for node_index in path:
+        i, j = from_node_index(node_index, cols)
+
+        k = target[j]
+        prob = pred[i, k]
+        tm_prob = text_mel_prob.get(j, -1e10)
+        if prob > tm_prob:
+            text_mel[j] = i
+            text_mel_prob[j] = prob
+
     for node_index in path:
         i, j = from_node_index(node_index, cols)
 
@@ -144,10 +156,16 @@ for num_id, id in enumerate(val_ids):
                 durations[i] += 1
                 durations[i + 1] -= 1
 
-
+    sum_durs = 0
+    for j in range(len(text_mel) - 1):
+        durations_new[j] = (text_mel[j] + text_mel[j + 1]) // 2 - sum_durs
+        sum_durs += durations_new[j]
+    durations_new[-1] = len(mel_text) - sum(durations_new)
 
     print(text)
     print(durations)
     print(f'sum durs: {sum(durations)} mel shape {mel.shape}')
+    print(f'sum durs new: {sum(durations_new)} mel shape {mel.shape}')
 
-    np.save(paths.alg2/f'{id}.npy', np.array(durations))
+    np.save(paths.alg/f'{id}.npy', np.array(durations))
+    np.save(paths.alg2/f'{id}.npy', np.array(durations_new))
