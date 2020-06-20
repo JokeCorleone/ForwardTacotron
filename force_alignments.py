@@ -126,12 +126,6 @@ for num_id, id in enumerate(val_ids):
     for node_index in path:
         i, j = from_node_index(node_index, cols)
 
-        prob = pred[i, j]
-        tm_prob = text_mel_prob.get(j, -1e10)
-        if prob > tm_prob:
-            text_mel[j] = i
-            text_mel_prob[j] = prob
-
         letter = sequence_to_text([target[j]])
         pred_letter = sequence_to_text([np.argmax(pred[i], axis=-1)])
         #print(f'{i} {j} {letter} {pred_letter} {pred_max[i, j]}')
