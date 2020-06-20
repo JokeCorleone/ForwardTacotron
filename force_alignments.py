@@ -163,7 +163,10 @@ for num_id, id in enumerate(val_ids):
     durations_new[-1] = len(mel_text) - sum(durations_new)
 
     print(text)
+    print('durs')
     print(durations)
+    print('durs new')
+    print(durations_new)
     print(f'sum durs: {sum(durations)} mel shape {mel.shape}')
     print(f'sum durs new: {sum(durations_new)} mel shape {mel.shape}')
 
