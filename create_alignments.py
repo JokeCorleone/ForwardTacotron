@@ -92,11 +92,20 @@ path = [0] + path + [dist_matrix.size-1]
 cols = pred_max.shape[1]
 
 mel_text = {}
+text_mel = {}
+text_mel_prob = {}
+
 durations = np.zeros(seq.shape[0])
 print(f'dur shape {durations.shape}')
 
 for node_index in path:
     i, j = from_node_index(node_index, cols)
+
+    prob = pred[i, j]
+    tm_prob = text_mel_prob.get(j, -1e10)
+    if prob > tm_prob:
+        text_mel[j] = i
+        text_mel_prob[j] = prob
 
     this_k = target[j]
     letter = sequence_to_text([target[j]])
@@ -117,6 +126,14 @@ for node_index in path:
 
     print(f'{i} {j} {letter} {pred_letter} {pred_max[i, j]} | {letter} {this_prob} | {next_letter} {next_prob} | ')
     mel_text[i] = j
+
+
+print('text mel')
+print(text_mel)
+print('text mel prob')
+print(text_mel_prob)
+
+
 
 for j in mel_text.values():
     durations[j] += 1
