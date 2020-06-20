@@ -24,7 +24,7 @@ else:
 print('Using device:', device)
 
 model = Aligner(n_mels=80, lstm_dim=256, num_symbols=len(phonemes)).to(device)
-model.load('checkpoints/asvoice_newdurs_tts.aligner/latest_weights.pyt')
+model.load('checkpoints/asvoice_aligner_melgan_tts.aligner/latest_weights.pyt')
 model.eval()
 paths = Paths(hp.data_path, hp.voc_model_id, hp.tts_model_id)
 print(f'loaded aligner step {model.get_step()}')
