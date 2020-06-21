@@ -9,7 +9,7 @@ from models.aligner import Aligner
 from utils.dataset import filter_max_len
 from utils.files import unpickle_binary
 from utils.paths import Paths
-from utils.text import phonemes, text_to_sequence, sequence_to_text
+from utils.text import phonemes, text_to_sequence, sequence_to_text, id_to_symbol
 from utils.text.cleaners import german_cleaners
 from utils import hparams as hp
 
@@ -124,6 +124,15 @@ for num_id, id in enumerate(text_dict):
             text_mel[j] = i
             text_mel_prob[j] = prob
 
+    # rectify pauses
+    for t, j in enumerate(text_mel):
+        i = text_mel[j]
+        k = target[j]
+        sym = id_to_symbol[k]
+        if sym == ' ' and 0 < t < len(text_mel) - 1:
+            before = text_mel[j]
+            text_mel[j] = (text_mel[j-1] + text_mel[j+1]) // 2
+
     for node_index in path:
         i, j = from_node_index(node_index, cols)
 
@@ -166,10 +175,10 @@ for num_id, id in enumerate(text_dict):
     print(durations)
     print('durs new')
     print(durations_new)
-    print(f'sum durs: {sum(durations)} mel shape {mel.shape}')
+    #print(f'sum durs: {sum(durations)} mel shape {mel.shape}')
     print(f'sum durs new: {sum(durations_new)} mel shape {mel.shape}')
-    print(f'sum durs new2: {sum(durations_new2)} mel shape {mel.shape}')
+    #print(f'sum durs new2: {sum(durations_new2)} mel shape {mel.shape}')
 
-#    np.save(paths.alg/f'{id}.npy', np.array(durations))
+    np.save(paths.alg/f'{id}.npy', np.array(durations_new))
 #    np.save(paths.alg2/f'{id}.npy', np.array(durations_new))
-    np.save(paths.alg2/f'{id}.npy', np.array(durations_new2))
+#    np.save(paths.alg2/f'{id}.npy', np.array(durations_new2))

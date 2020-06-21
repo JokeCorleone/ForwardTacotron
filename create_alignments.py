@@ -7,7 +7,7 @@ import torch
 
 from models.aligner import Aligner
 from utils.files import unpickle_binary
-from utils.text import phonemes, text_to_sequence, sequence_to_text
+from utils.text import phonemes, text_to_sequence, sequence_to_text, id_to_symbol
 from utils.text.cleaners import german_cleaners
 from utils import hparams as hp
 
@@ -110,7 +110,15 @@ for node_index in path:
         text_mel[j] = i
         text_mel_prob[j] = prob
 
-
+for t, j in enumerate(text_mel):
+    i = text_mel[j]
+    k = target[j]
+    sym = id_to_symbol[k]
+    if sym == ' ' and 0 < t < len(text_mel) - 1:
+        before = text_mel[j]
+        text_mel[j] = (text_mel[j-1] + text_mel[j+1]) // 2
+        #print(f'{t} before: {before} after {text_mel[j]}')
+#exit()
 for node_index in path:
     i, j = from_node_index(node_index, cols)
 
@@ -134,6 +142,8 @@ for node_index in path:
     tm_letter = '*'
     if text_mel[j] == i:
         tm_letter = sequence_to_text([target[j]])
+        if tm_letter == ' ':
+            tm_letter = '///'
 
 
     print(f'{i} {j} {letter} {pred_letter} {tm_letter} | {pred_max[i, j]}')
@@ -175,6 +185,8 @@ for j in mel_text.values():
 print(f'durs: {durations}')
 print(f'durs_new: {durations_new}')
 print(f'durs_new2: {durations_new2}')
+print(f'sum durs new: {sum(durations_new)} mel shape {mel.shape}')
+
 #for i in range(len(durations)):
 #    print(f'{text[i]} {durations[i]} ')
 #print(durations)
