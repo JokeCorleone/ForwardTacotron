@@ -129,7 +129,7 @@ for num_id, id in enumerate(text_dict):
         i = text_mel[j]
         k = target[j]
         sym = id_to_symbol[k]
-        if sym == ' ' and 0 < t < len(text_mel) - 1:
+        if sym == ' ' and 0 < j < len(text_mel) - 1:
             before = text_mel[j]
             text_mel[j] = (text_mel[j-1] + text_mel[j+1]) // 2
 
@@ -177,6 +177,7 @@ for num_id, id in enumerate(text_dict):
     print(durations_new)
     #print(f'sum durs: {sum(durations)} mel shape {mel.shape}')
     print(f'sum durs new: {sum(durations_new)} mel shape {mel.shape}')
+    #print(f'sum durs new2: {sum(durations_new2)} mel shape {mel.shape}')
     #print(f'sum durs new2: {sum(durations_new2)} mel shape {mel.shape}')
 
     np.save(paths.alg/f'{id}.npy', np.array(durations_new))
