@@ -198,9 +198,6 @@ class ForwardTacotron(nn.Module):
 
         x = self.embedding(x)
         x = self.pre(x)
-        bs = dur.shape[0]
-        ends = torch.cumsum(dur, dim=1)
-        mids = ends - dur / 2.
 
         x = x.transpose(1, 2)
 
@@ -208,6 +205,9 @@ class ForwardTacotron(nn.Module):
 
         dur = self.dur_pred(x_p, alpha=alpha)
         dur = dur.squeeze(2)
+        bs = dur.shape[0]
+        ends = torch.cumsum(dur, dim=1)
+        mids = ends - dur / 2.
 
         device = next(self.parameters()).device
         mel_len = int(torch.sum(dur))
