@@ -122,8 +122,8 @@ class ForwardTacotron(nn.Module):
                                           conv_dims=durpred_conv_dims,
                                           rnn_dims=durpred_rnn_dims,
                                           dropout=durpred_dropout)
-        self.prenet = CBHG(K=128,
-                           in_channels=embed_dims,
+        self.prenet = CBHG(K=prenet_k,
+                           in_channels=128,
                            channels=prenet_dims,
                            proj_channels=[prenet_dims, embed_dims],
                            num_highways=highways)
