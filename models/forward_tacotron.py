@@ -118,7 +118,7 @@ class ForwardTacotron(nn.Module):
         self.pre = PreNet(embed_dims)
         self.embedding = nn.Embedding(num_chars, embed_dims)
         self.lr = LengthRegulator()
-        self.dur_pred = DurationPredictor(prenet_dims,
+        self.dur_pred = DurationPredictor(2*prenet_dims,
                                           conv_dims=durpred_conv_dims,
                                           rnn_dims=durpred_rnn_dims,
                                           dropout=durpred_dropout)
