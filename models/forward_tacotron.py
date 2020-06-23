@@ -40,6 +40,23 @@ class LengthRegulator(nn.Module):
         return y
 
 
+class PreNet(nn.Module):
+    def __init__(self, in_dims, fc1_dims=256, fc2_dims=128, dropout=0.5):
+        super().__init__()
+        self.fc1 = nn.Linear(in_dims, fc1_dims)
+        self.fc2 = nn.Linear(fc1_dims, fc2_dims)
+        self.p = dropout
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = F.dropout(x, self.p, training=self.training)
+        x = self.fc2(x)
+        x = F.relu(x)
+        x = F.dropout(x, self.p, training=self.training)
+        return x
+
+
 class DurationPredictor(nn.Module):
 
     def __init__(self, in_dims, conv_dims=256, rnn_dims=64, dropout=0.5):
@@ -47,10 +64,10 @@ class DurationPredictor(nn.Module):
         self.convs = torch.nn.ModuleList([
             BatchNormConv(in_dims, conv_dims, 5, activation=torch.relu),
             BatchNormConv(conv_dims, conv_dims, 5, activation=torch.relu),
-            BatchNormConv(conv_dims, conv_dims, 5, activation=torch.relu),
+            #BatchNormConv(conv_dims, conv_dims, 5, activation=torch.relu),
         ])
-        self.rnn = nn.GRU(conv_dims, rnn_dims, batch_first=True, bidirectional=True)
-        self.lin = nn.Linear(2 * rnn_dims, 1)
+
+        self.lin = nn.Linear(conv_dims, 1)
         self.dropout = dropout
 
     def forward(self, x, alpha=1.0):
@@ -59,7 +76,6 @@ class DurationPredictor(nn.Module):
             x = conv(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
         x = x.transpose(1, 2)
-        x, _ = self.rnn(x)
         x = self.lin(x)
         return x / alpha
 
@@ -99,13 +115,14 @@ class ForwardTacotron(nn.Module):
 
         super().__init__()
         self.rnn_dim = rnn_dim
+        self.pre = PreNet(embed_dims)
         self.embedding = nn.Embedding(num_chars, embed_dims)
         self.lr = LengthRegulator()
-        self.dur_pred = DurationPredictor(embed_dims,
+        self.dur_pred = DurationPredictor(prenet_dims,
                                           conv_dims=durpred_conv_dims,
                                           rnn_dims=durpred_rnn_dims,
                                           dropout=durpred_dropout)
-        self.prenet = CBHG(K=prenet_k,
+        self.prenet = CBHG(K=128,
                            in_channels=embed_dims,
                            channels=prenet_dims,
                            proj_channels=[prenet_dims, embed_dims],
@@ -129,8 +146,7 @@ class ForwardTacotron(nn.Module):
             self.step += 1
 
         x = self.embedding(x)
-        dur_hat = self.dur_pred(x)
-        dur_hat = dur_hat.squeeze()
+        x = self.pre(x)
 
         bs = dur.shape[0]
         ends = torch.cumsum(dur.float(), dim=1)
@@ -138,6 +154,10 @@ class ForwardTacotron(nn.Module):
 
         x = x.transpose(1, 2)
         x_p = self.prenet(x)
+
+        dur_hat = self.dur_pred(x_p)
+        dur_hat = dur_hat.squeeze()
+
         device = next(self.parameters()).device
         mel_len = mel.shape[-1]
         seq_len = mids.shape[1]
@@ -177,15 +197,18 @@ class ForwardTacotron(nn.Module):
         x = torch.as_tensor(x, dtype=torch.long, device=device).unsqueeze(0)
 
         x = self.embedding(x)
-        dur = self.dur_pred(x, alpha=alpha)
-        dur = dur.squeeze(2)
-
+        x = self.pre(x)
         bs = dur.shape[0]
         ends = torch.cumsum(dur, dim=1)
         mids = ends - dur / 2.
 
         x = x.transpose(1, 2)
+
         x_p = self.prenet(x)
+
+        dur = self.dur_pred(x_p, alpha=alpha)
+        dur = dur.squeeze(2)
+
         device = next(self.parameters()).device
         mel_len = int(torch.sum(dur))
         seq_len = mids.shape[1]

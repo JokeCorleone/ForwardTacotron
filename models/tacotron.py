@@ -58,7 +58,6 @@ class CBHG(nn.Module):
 
         # List of all rnns to call `flatten_parameters()` on
         self._to_flatten = []
-
         self.bank_kernels = [i for i in range(1, K + 1)]
         self.conv1d_bank = nn.ModuleList()
         for k in self.bank_kernels:

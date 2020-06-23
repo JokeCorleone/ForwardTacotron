@@ -124,14 +124,6 @@ for num_id, id in enumerate(text_dict):
             text_mel[j] = i
             text_mel_prob[j] = prob
 
-    # rectify pauses
-    for t, j in enumerate(text_mel):
-        i = text_mel[j]
-        k = target[j]
-        sym = id_to_symbol[k]
-        if sym == ' ' and 0 < j < len(text_mel) - 1:
-            before = text_mel[j]
-            text_mel[j] = (text_mel[j-1] + text_mel[j+1]) // 2
 
     for node_index in path:
         i, j = from_node_index(node_index, cols)
