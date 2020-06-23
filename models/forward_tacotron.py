@@ -125,7 +125,7 @@ class ForwardTacotron(nn.Module):
         self.prenet = CBHG(K=prenet_k,
                            in_channels=128,
                            channels=prenet_dims,
-                           proj_channels=[prenet_dims, embed_dims],
+                           proj_channels=[prenet_dims, 128],
                            num_highways=highways)
         self.lstm = nn.LSTM(2 * prenet_dims,
                             rnn_dim,
