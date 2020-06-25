@@ -29,11 +29,8 @@ model.eval()
 paths = Paths(hp.data_path, hp.voc_model_id, hp.tts_model_id)
 print(f'loaded aligner step {model.get_step()}')
 
-val_data = unpickle_binary('data/val_dataset.pkl')
-train_ids, train_lens = filter_max_len(val_data)
-val_ids, val_lens = filter_max_len(val_data)
 
-for num_id, id in enumerate(val_ids):
+for num_id, id in enumerate(text_dict):
     print(f'predict {id}, {num_id}/{len(text_dict)}')
     mel = np.load(f'data/mel/{id}.npy')
 
